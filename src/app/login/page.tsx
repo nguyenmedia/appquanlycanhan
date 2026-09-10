@@ -70,15 +70,15 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-400 mb-1.5">Email</label>
+            <label className="block text-xs font-semibold text-neutral-400 mb-1.5">Tên đăng nhập hoặc Email</label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
+                placeholder="nguyenmedia hoặc name@example.com"
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               />
             </div>
@@ -101,29 +101,16 @@ export default function LoginPage() {
 
           {/* Quick Demo Accounts Helper */}
           <div className="pt-2 text-[11px] text-neutral-400 space-y-1 bg-neutral-950/50 p-3 rounded-xl border border-neutral-800/60">
-            <div className="font-semibold text-neutral-300 mb-1">Tài khoản mẫu có sẵn:</div>
+            <div className="font-semibold text-neutral-300 mb-1">Tài khoản Quản Trị Viên (Admin):</div>
             <div className="flex justify-between items-center">
-              <span>Admin: admin@lifeos.app</span>
+              <span>Admin: <strong className="text-white">nguyenmedia</strong></span>
               <button
                 type="button"
                 onClick={() => {
-                  setEmail("admin@lifeos.app");
-                  setPassword("Admin@123456");
+                  setEmail("nguyenmedia");
+                  setPassword("nguyenmedia123@");
                 }}
-                className="text-indigo-400 hover:underline"
-              >
-                Điền nhanh
-              </button>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>User Pro: user@lifeos.app</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("user@lifeos.app");
-                  setPassword("User@123456");
-                }}
-                className="text-indigo-400 hover:underline"
+                className="text-indigo-400 hover:underline font-medium"
               >
                 Điền nhanh
               </button>

@@ -12,16 +12,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Vui lòng nhập đầy đủ email và mật khẩu" }, { status: 400 });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const rawInput = (email || "").toLowerCase().trim();
+    const candidates = [rawInput];
+    if (rawInput === "nguyenmedia") {
+      candidates.push("nguyenmedia@lifeos.app");
+    } else if (rawInput.startsWith("nguyenmedia@")) {
+      candidates.push("nguyenmedia");
+    }
 
     let user: any = null;
-    try {
-      user = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-        include: { profile: true },
-      });
-    } catch (dbErr) {
-      console.warn("[Login] Local Prisma lookup failed:", dbErr);
+    for (const cand of candidates) {
+      try {
+        user = await prisma.user.findUnique({
+          where: { email: cand },
+          include: { profile: true },
+        });
+        if (user) break;
+      } catch (dbErr) {
+        console.warn("[Login] Local Prisma lookup failed:", dbErr);
+      }
     }
 
     // Cloud fallback: If user was registered on another device (PC -> Mobile) or another Vercel lambda
@@ -30,7 +39,8 @@ export async function POST(req: NextRequest) {
         const { data: sbUser } = await supabase
           .from("users")
           .select("*, profile:user_profiles(*)")
-          .eq("email", normalizedEmail)
+          .in("email", candidates)
+          .limit(1)
           .maybeSingle();
 
         if (sbUser) {
