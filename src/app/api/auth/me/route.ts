@@ -6,9 +6,32 @@ import prisma from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
+    const { isMaintenanceModeEnabled } = await import("@/lib/maintenance");
+    const isMaintenance = await isMaintenanceModeEnabled();
+    const isMaintenanceAdmin = user ? ["ADMIN", "SUPER_ADMIN"].includes(user.role) : false;
+
     if (!user) {
-      return NextResponse.json({ authenticated: false, user: null });
+      return NextResponse.json({
+        authenticated: false,
+        maintenance: isMaintenance,
+        isMaintenanceAdmin: false,
+        user: null,
+      });
     }
+
+    if (isMaintenance && !isMaintenanceAdmin) {
+      return NextResponse.json(
+        {
+          authenticated: true,
+          maintenance: true,
+          isMaintenanceAdmin: false,
+          error: "Hệ thống đang trong chế độ bảo trì nâng cấp. Vui lòng quay lại sau ít phút.",
+          user: null,
+        },
+        { status: 503 }
+      );
+    }
+
 
     const [activePlan, aiCredits, activeAnnouncements] = await Promise.all([
       getUserActivePlan(user.id),
@@ -31,6 +54,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       authenticated: true,
+      maintenance: isMaintenance,
+      isMaintenanceAdmin,
       user: {
         id: user.id,
         email: user.email,

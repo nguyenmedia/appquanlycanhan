@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
     async function checkAdmin() {
@@ -35,6 +36,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           router.push("/dashboard");
         } else {
           setUser(json.user);
+          if (json.maintenance) {
+            setIsMaintenance(true);
+          }
         }
       } catch (e) {
         router.push("/dashboard");
@@ -124,10 +128,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* TOP ADMIN NAVBAR */}
         <header className="h-16 border-b border-neutral-800 bg-[#0c0c12]/80 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between flex-shrink-0 z-30">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Hệ thống trực tuyến</span>
-            </div>
+            {isMaintenance ? (
+              <Link
+                href="/admin/settings"
+                className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/35 text-[11px] font-bold text-rose-400 hover:bg-rose-500/25 transition"
+              >
+                <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />
+                <span>CHẾ ĐỘ BẢO TRÌ ĐANG BẬT</span>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Hệ thống trực tuyến</span>
+              </div>
+            )}
             <span className="text-xs text-neutral-500 hidden sm:inline">|</span>
             <span className="text-xs text-neutral-400 hidden sm:inline">
               Cổng Quản Trị LifeOS VIP

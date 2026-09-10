@@ -118,6 +118,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email hoặc mật khẩu không chính xác" }, { status: 401 });
     }
 
+    // Kiểm tra Chế độ bảo trì hệ thống (Maintenance Mode)
+    const { isMaintenanceModeEnabled } = await import("@/lib/maintenance");
+    const isMaintenance = await isMaintenanceModeEnabled();
+    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
+
+    if (isMaintenance && !isAdmin) {
+      return NextResponse.json(
+        {
+          error: "Hệ thống đang trong chế độ bảo trì nâng cấp. Hiện tại chỉ tài khoản Quản trị viên (Admin) mới có quyền truy cập.",
+          maintenance: true,
+        },
+        { status: 503 }
+      );
+    }
+
     // Update CRM last activity safely
     try {
       await prisma.customerCRM.upsert({

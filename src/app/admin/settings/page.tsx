@@ -311,19 +311,52 @@ export default function AdminSettingsPage() {
             </h3>
 
             <div className="space-y-3 text-xs">
-              <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-white block">Chế độ bảo trì hệ thống (Maintenance Mode)</span>
-                  <span className="text-neutral-400 text-[11px]">
-                    Khi bật, chỉ tài khoản Admin mới có thể truy cập, người dùng khác sẽ thấy thông báo bảo trì.
-                  </span>
+              <div className={`p-4 rounded-2xl border transition ${
+                getValue("maintenance_mode", "false") === "true"
+                  ? "bg-rose-950/20 border-rose-800/60"
+                  : "bg-neutral-950 border-neutral-800"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white block">Chế độ bảo trì hệ thống (Maintenance Mode)</span>
+                      {getValue("maintenance_mode", "false") === "true" ? (
+                        <span className="px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold text-[10px] animate-pulse">
+                          ĐANG BẬT BẢO TRÌ
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[10px]">
+                          Bình thường
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-neutral-400 text-[11px] block max-w-xl">
+                      Khi bật, chỉ tài khoản Admin mới có thể truy cập, người dùng khác sẽ thấy thông báo bảo trì.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={getValue("maintenance_mode", "false") === "true"}
+                    onChange={(e) => setValue("maintenance_mode", e.target.checked ? "true" : "false")}
+                    className="rounded accent-rose-500 w-5 h-5 cursor-pointer ml-4"
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={getValue("maintenance_mode", "false") === "true"}
-                  onChange={(e) => setValue("maintenance_mode", e.target.checked ? "true" : "false")}
-                  className="rounded accent-rose-500 w-5 h-5 cursor-pointer"
-                />
+
+                <div className="mt-3 pt-3 border-t border-neutral-800/50 flex items-center justify-between text-[11px]">
+                  <span className="text-neutral-500">
+                    {getValue("maintenance_mode", "false") === "true"
+                      ? "⚠️ Tất cả người dùng thông thường và khách sẽ bị chuyển hướng đến /maintenance."
+                      : "Người dùng có thể đăng nhập và sử dụng toàn bộ tính năng bình thường."}
+                  </span>
+                  <a
+                    href="/maintenance"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:text-amber-300 font-semibold underline ml-2 whitespace-nowrap"
+                  >
+                    Xem trước trang bảo trì ↗
+                  </a>
+                </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-between">

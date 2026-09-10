@@ -47,7 +47,7 @@ export default function AppShell({ children }: AppShellProps) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [maintenanceModeActive, setMaintenanceModeActive] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -60,6 +60,17 @@ export default function AppShell({ children }: AppShellProps) {
 
         const res = await fetch("/api/auth/me", { headers });
         const data = await res.json();
+
+        // Kiểm tra Chế độ bảo trì hệ thống (Maintenance Mode)
+        if (data.maintenance) {
+          if (!data.isMaintenanceAdmin) {
+            router.push("/maintenance");
+            return;
+          } else {
+            setMaintenanceModeActive(true);
+          }
+        }
+
         if (data.authenticated) {
           setUser(data.user);
         } else {
@@ -744,6 +755,27 @@ export default function AppShell({ children }: AppShellProps) {
               <span>Đăng xuất</span>
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Maintenance Mode Warning Banner for Admin */}
+      {maintenanceModeActive && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2.5 text-amber-300 text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-2 z-30 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+            </span>
+            <span>
+              <strong>CHẾ ĐỘ BẢO TRÌ ĐANG BẬT:</strong> Người dùng thông thường hiện không thể truy cập ứng dụng. Chỉ tài khoản Admin mới có quyền truy cập.
+            </span>
+          </div>
+          <Link
+            href="/admin/settings"
+            className="self-start sm:self-auto px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition shadow-md shadow-amber-500/20 whitespace-nowrap"
+          >
+            Quản trị Cài đặt
+          </Link>
         </div>
       )}
 
