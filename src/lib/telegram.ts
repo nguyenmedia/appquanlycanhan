@@ -53,21 +53,24 @@ export async function notifyNewPaymentOrder(params: {
   amount: number;
   transferCode: string;
   method?: string;
+  customerName?: string;
 }) {
   const formattedAmount = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(params.amount);
   const time = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const msg = `
-🧾 <b>[ĐƠN THANH TOÁN MỚI]</b>
+🧾 <b>[ĐƠN THANH TOÁN MỚI KHỞI TẠO]</b>
 ━━━━━━━━━━━━━━━━━━
-👤 <b>Khách hàng:</b> <code>${params.userEmail}</code>
+👤 <b>Khách hàng:</b> <code>${params.userEmail}</code>${params.customerName ? ` (${params.customerName})` : ""}
 📦 <b>Gói dịch vụ:</b> <b>${params.planName}</b>
 💰 <b>Số tiền:</b> <code>${formattedAmount}</code>
-🔖 <b>Mã chuyển khoản:</b> <code>${params.transferCode}</code>
+🔖 <b>Mã nạp (Nội dung CK):</b> <code>${params.transferCode}</code>
 💳 <b>Phương thức:</b> ${params.method || "VietQR Chuyển khoản"}
 ⏰ <b>Thời gian:</b> ${time}
 ━━━━━━━━━━━━━━━━━━
-<i>Đang chờ khách hàng quét mã VietQR và xác nhận...</i>
+<i>Đang chờ khách hàng quét mã VietQR chuyển khoản...</i>
+🔗 <b>Xem danh sách đơn:</b> ${appUrl}/admin/payments
 `.trim();
 
   return sendTelegramMessage(msg);
@@ -82,20 +85,23 @@ export async function notifyCustomerConfirmedTransfer(params: {
   planName: string;
   amount: number;
   transferCode: string;
+  customerName?: string;
 }) {
   const formattedAmount = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(params.amount);
   const time = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const msg = `
 🚨 <b>[KHÁCH HÀNG BÁO ĐÃ CHUYỂN TIỀN]</b>
 ━━━━━━━━━━━━━━━━━━
-👤 <b>Khách hàng:</b> <code>${params.userEmail}</code>
-📦 <b>Nâng cấp:</b> <b>${params.planName}</b>
-💰 <b>Số tiền:</b> <b>${formattedAmount}</b>
-🔖 <b>Mã nạp (Nội dung CK):</b> <code>${params.transferCode}</code>
+👤 <b>Khách hàng:</b> <code>${params.userEmail}</code>${params.customerName ? ` (${params.customerName})` : ""}
+📦 <b>Gói đăng ký mua:</b> <b>${params.planName}</b>
+💰 <b>Số tiền cần nhận:</b> <b>${formattedAmount}</b>
+🔖 <b>Mã nạp (Cú pháp CK):</b> <code>${params.transferCode}</code>
 ⏰ <b>Thời gian:</b> ${time}
 ━━━━━━━━━━━━━━━━━━
-👉 <b>Hành động:</b> Vui lòng kiểm tra biến động số dư ngân hàng và duyệt nâng cấp tài khoản tại Admin Dashboard!
+👉 <b>HÀNH ĐỘNG:</b> Vui lòng kiểm tra app ngân hàng, sau đó bấm link bên dưới để DUYỆT NGAY (Hệ thống sẽ tự động kích hoạt đúng gói ${params.planName}):
+🔗 <b>Link duyệt nhanh Admin:</b> ${appUrl}/admin/payments
 `.trim();
 
   return sendTelegramMessage(msg);
@@ -110,20 +116,24 @@ export async function notifyPaymentSuccess(params: {
   planName: string;
   amount: number;
   approvedBy?: string;
+  billingCycle?: string;
+  aiCredits?: number;
 }) {
   const formattedAmount = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(params.amount);
   const time = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
 
   const msg = `
-✅ <b>[GIAO DỊCH THÀNH CÔNG - ĐÃ KÍCH HOẠT PRO]</b>
+✅ <b>[ĐÃ DUYỆT & KÍCH HOẠT THÀNH CÔNG]</b>
 ━━━━━━━━━━━━━━━━━━
-👤 <b>Tài khoản:</b> <code>${params.userEmail}</code>
-🏆 <b>Gói mới:</b> <b>${params.planName} (ACTIVE)</b>
-💵 <b>Thu về:</b> <code>${formattedAmount}</code>
-🛡️ <b>Người duyệt:</b> ${params.approvedBy || "Hệ thống tự động (Webhook)"}
+👤 <b>Tài khoản khách:</b> <code>${params.userEmail}</code>
+🏆 <b>Gói vừa kích hoạt:</b> <b>${params.planName} (ACTIVE)</b>
+🔄 <b>Chu kỳ:</b> ${params.billingCycle === "yearly" ? "Gói năm (12 tháng)" : "Gói tháng (30 ngày)"}
+💵 <b>Số tiền thanh toán:</b> <code>${formattedAmount}</code>
+🤖 <b>AI Credits cấp mới:</b> +${params.aiCredits || 100} credits
+🛡️ <b>Người duyệt:</b> ${params.approvedBy || "Admin"}
 ⏰ <b>Thời gian:</b> ${time}
 ━━━━━━━━━━━━━━━━━━
-🎉 Tài khoản đã được nâng cấp quyền lợi VIP trên toàn hệ thống!
+🎉 Tài khoản khách hàng đã được nâng cấp chính xác gói đã mua trên toàn hệ thống và Supabase Cloud!
 `.trim();
 
   return sendTelegramMessage(msg);

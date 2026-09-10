@@ -30,11 +30,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    let planName = "Nâng cấp Pro";
+    let planName = "LifeOS Pro";
+    let customerName = tx.user?.profile?.fullName || "";
     if (tx.metadataJson) {
       try {
         const meta = JSON.parse(tx.metadataJson);
-        if (meta.planName) planName = meta.planName;
+        if (meta.planName) {
+          const cycleStr = meta.billingCycle === "yearly" ? "Gói năm (12 tháng)" : "Gói tháng (30 ngày)";
+          planName = `${meta.planName} (${cycleStr})`;
+        }
       } catch {}
     }
 
@@ -42,6 +46,7 @@ export async function POST(req: NextRequest) {
     notifyCustomerConfirmedTransfer({
       orderId: tx.id,
       userEmail: tx.user?.email || "Khách hàng",
+      customerName,
       planName,
       amount: tx.amount,
       transferCode: tx.idempotencyKey,

@@ -30,6 +30,8 @@ function VietQRCheckoutContent() {
   const content = searchParams.get("content") || `LIFEOS ${transactionId}`;
   const qrUrl = searchParams.get("qrUrl") || `https://img.vietqr.io/image/${bankId}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(accountName)}`;
 
+  const planName = searchParams.get("planName") || "Nâng cấp gói dịch vụ LifeOS";
+
   const [copiedField, setCopiedField] = useState<string>("");
   const [isPaid, setIsPaid] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -133,7 +135,11 @@ function VietQRCheckoutContent() {
         </div>
 
         {/* TITLE */}
-        <div className="text-center space-y-1">
+        <div className="text-center space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Đang thanh toán: {planName}</span>
+          </div>
           <h1 className="text-xl sm:text-2xl font-black text-white flex items-center justify-center gap-2">
             <QrCode className="w-6 h-6 text-emerald-400" />
             <span>Quét Mã VietQR Thanh Toán Tự Động</span>

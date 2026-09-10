@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Đã duyệt thanh toán và nâng cấp gói cước thành công cho khách hàng ${tx.user.email}!`,
+        message: `Đã duyệt thanh toán và tự động kích hoạt đúng gói [${result.planName || "Pro"}] thành công cho khách hàng ${tx.user.email}!`,
         result,
       });
     }

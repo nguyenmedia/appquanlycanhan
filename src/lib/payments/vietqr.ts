@@ -33,7 +33,7 @@ export class VietQRProvider implements IPaymentProvider {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const checkoutPageUrl = `${appUrl}/checkout/vietqr?transactionId=${params.transactionId}&amount=${params.amount}&bankId=${bankId}&accountNumber=${accountNumber}&accountName=${encodeURIComponent(
       accountName
-    )}&content=${encodeURIComponent(transferContent)}&qrUrl=${encodeURIComponent(qrImageUrl)}`;
+    )}&content=${encodeURIComponent(transferContent)}&qrUrl=${encodeURIComponent(qrImageUrl)}&planName=${encodeURIComponent(params.orderInfo || "Gói nâng cấp")}`;
 
     return {
       paymentUrl: checkoutPageUrl,
