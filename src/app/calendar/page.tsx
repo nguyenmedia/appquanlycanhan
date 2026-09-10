@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -16,10 +17,21 @@ import {
   Filter,
 } from "lucide-react";
 
-export default function CalendarPage() {
+function CalendarContent() {
+  const searchParams = useSearchParams();
+  const queryFilter = searchParams.get("filter");
+
   const [events, setEvents] = useState<any[]>([]);
   const [dueTasks, setDueTasks] = useState<any[]>([]);
-  const [filterType, setFilterType] = useState<"all" | "events" | "tasks">("all");
+  const [filterType, setFilterType] = useState<"all" | "events" | "tasks">(
+    queryFilter === "events" ? "events" : queryFilter === "tasks" ? "tasks" : "all"
+  );
+
+  useEffect(() => {
+    if (queryFilter === "events" || queryFilter === "tasks" || queryFilter === "all") {
+      setFilterType(queryFilter);
+    }
+  }, [queryFilter]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -414,3 +426,18 @@ export default function CalendarPage() {
     </AppShell>
   );
 }
+
+export default function CalendarPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải lịch biểu...
+        </div>
+      }
+    >
+      <CalendarContent />
+    </Suspense>
+  );
+}
+

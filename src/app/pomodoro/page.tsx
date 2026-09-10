@@ -24,8 +24,16 @@ import { Suspense } from "react";
 function PomodoroContent() {
   const searchParams = useSearchParams();
   const queryTaskId = searchParams.get("taskId");
+  const queryTab = searchParams.get("tab");
 
+  const [activeTab, setActiveTab] = useState<"timer" | "history">(queryTab === "history" ? "history" : "timer");
   const [mode, setMode] = useState<"work" | "short_break" | "long_break">("work");
+
+  useEffect(() => {
+    if (queryTab === "history" || queryTab === "timer") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
   const [timeLeft, setTimeLeft] = useState<number>(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [completedSessions, setCompletedSessions] = useState(0);
@@ -208,7 +216,30 @@ function PomodoroContent() {
           </div>
         </div>
 
-        {/* Stats Row */}
+        {/* SUB-TABS: TIMER vs HISTORY */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("timer")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "timer" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Đồng hồ tập trung
+            </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "history" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <History className="w-3.5 h-3.5 text-orange-400" />
+              <span>Lịch sử Deep Work ({sessionsHistory.length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 4 PRIMARY STATS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 rounded-2xl border border-neutral-800 bg-neutral-900/60">
             <span className="text-xs text-neutral-400">Phiên hoàn thành</span>
@@ -231,121 +262,126 @@ function PomodoroContent() {
           </div>
         </div>
 
-        {/* TASK SELECTOR ROW (Interconnection with Tasks module) */}
-        <div className="p-4 rounded-2xl border border-neutral-800 bg-neutral-900/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-              <CheckSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-neutral-300 block">Công việc đang tập trung giải quyết:</span>
-              {selectedTask ? (
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-sm font-semibold text-white">{selectedTask.title}</span>
-                  {selectedTask.project && (
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300">
-                      {selectedTask.project.name}
-                    </span>
+        {/* TAB 1: TIMER VIEW */}
+        {activeTab === "timer" && (
+          <>
+            {/* TASK SELECTOR ROW (Interconnection with Tasks module) */}
+            <div className="p-4 rounded-2xl border border-neutral-800 bg-neutral-900/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
+                  <CheckSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-neutral-300 block">Công việc đang tập trung giải quyết:</span>
+                  {selectedTask ? (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-semibold text-white">{selectedTask.title}</span>
+                      {selectedTask.project && (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300">
+                          {selectedTask.project.name}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-neutral-500">Chưa chọn công việc cụ thể</span>
                   )}
                 </div>
-              ) : (
-                <span className="text-xs text-neutral-500">Chưa chọn công việc cụ thể</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTaskId}
+                  onChange={(e) => setSelectedTaskId(e.target.value)}
+                  className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Chọn công việc từ danh sách --</option>
+                  {tasks.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title} {t.project ? `(${t.project.name})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* MAIN TIMER CARD */}
+            <div className="rounded-3xl border border-neutral-800 bg-neutral-900/80 p-8 sm:p-12 text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+              {/* Ambient Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-orange-600/10 blur-[90px] rounded-full pointer-events-none" />
+
+              {/* Mode Switcher */}
+              <div className="inline-flex p-1 rounded-2xl bg-neutral-950 border border-neutral-800 mb-8 z-10">
+                <button
+                  onClick={() => switchMode("work")}
+                  className={`px-5 py-2 rounded-xl text-xs font-semibold transition ${
+                    mode === "work" ? "bg-orange-600 text-white shadow-md shadow-orange-600/20" : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Làm việc (25m)
+                </button>
+                <button
+                  onClick={() => switchMode("short_break")}
+                  className={`px-5 py-2 rounded-xl text-xs font-semibold transition ${
+                    mode === "short_break" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Nghỉ ngắn (5m)
+                </button>
+                <button
+                  onClick={() => switchMode("long_break")}
+                  className={`px-5 py-2 rounded-xl text-xs font-semibold transition ${
+                    mode === "long_break" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "text-neutral-400 hover:text-white"
+                  }`}
+                >
+                  Nghỉ dài (15m)
+                </button>
+              </div>
+
+              {/* Huge Timer Digits */}
+              <div className="text-7xl sm:text-9xl font-extrabold font-mono tracking-tighter text-white mb-8 drop-shadow-lg z-10">
+                {timeFormatted}
+              </div>
+
+              {/* Action Controls */}
+              <div className="flex items-center gap-4 z-10">
+                <button
+                  onClick={() => setIsRunning(!isRunning)}
+                  className={`w-16 h-16 rounded-3xl flex items-center justify-center font-bold text-white shadow-xl transition active:scale-95 ${
+                    isRunning
+                      ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/25"
+                      : "bg-gradient-brand hover:opacity-95 shadow-indigo-600/25"
+                  }`}
+                >
+                  {isRunning ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
+                </button>
+                <button
+                  onClick={() => switchMode(mode)}
+                  title="Đặt lại"
+                  className="w-12 h-12 rounded-2xl border border-neutral-800 bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Finish session early button */}
+              {isRunning && (
+                <button
+                  onClick={handleFinishSession}
+                  className="mt-6 text-xs text-neutral-400 hover:text-neutral-200 underline z-10 transition"
+                >
+                  Hoàn thành sớm & lưu phiên tập trung
+                </button>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedTaskId}
-              onChange={(e) => setSelectedTaskId(e.target.value)}
-              className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-            >
-              <option value="">-- Chọn công việc từ danh sách --</option>
-              {tasks.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title} {t.project ? `(${t.project.name})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* MAIN TIMER CARD */}
-        <div className="rounded-3xl border border-neutral-800 bg-neutral-900/80 p-8 sm:p-12 text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
-          {/* Ambient Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-orange-600/10 blur-[90px] rounded-full pointer-events-none" />
-
-          {/* Mode Switcher */}
-          <div className="inline-flex p-1 rounded-2xl bg-neutral-950 border border-neutral-800 mb-8 z-10">
-            <button
-              onClick={() => switchMode("work")}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold transition ${
-                mode === "work" ? "bg-orange-600 text-white shadow-md shadow-orange-600/20" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              Làm việc (25m)
-            </button>
-            <button
-              onClick={() => switchMode("short_break")}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold transition ${
-                mode === "short_break" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              Nghỉ ngắn (5m)
-            </button>
-            <button
-              onClick={() => switchMode("long_break")}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold transition ${
-                mode === "long_break" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              Nghỉ dài (15m)
-            </button>
-          </div>
-
-          {/* Huge Timer Digits */}
-          <div className="text-7xl sm:text-9xl font-extrabold font-mono tracking-tighter text-white mb-8 drop-shadow-lg z-10">
-            {timeFormatted}
-          </div>
-
-          {/* Action Controls */}
-          <div className="flex items-center gap-4 z-10">
-            <button
-              onClick={() => setIsRunning(!isRunning)}
-              className={`w-16 h-16 rounded-3xl flex items-center justify-center font-bold text-white shadow-xl transition active:scale-95 ${
-                isRunning
-                  ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/25"
-                  : "bg-gradient-brand hover:opacity-95 shadow-indigo-600/25"
-              }`}
-            >
-              {isRunning ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
-            </button>
-            <button
-              onClick={() => switchMode(mode)}
-              title="Đặt lại"
-              className="w-12 h-12 rounded-2xl border border-neutral-800 bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Finish session early button */}
-          {isRunning && (
-            <button
-              onClick={handleFinishSession}
-              className="mt-6 text-xs text-neutral-400 hover:text-neutral-200 underline z-10 transition"
-            >
-              Hoàn thành sớm & lưu phiên tập trung
-            </button>
-          )}
-        </div>
+          </>
+        )}
 
         {/* SESSION HISTORY TABLE */}
         <div className="rounded-3xl border border-neutral-800 bg-neutral-900/60 p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <History className="w-4 h-4 text-neutral-400" />
-              <span>Lịch sử các phiên tập trung gần đây</span>
+              <History className="w-4 h-4 text-orange-400" />
+              <span>{activeTab === "history" ? "Toàn bộ lịch sử các phiên Deep Work" : "Lịch sử phiên gần đây"}</span>
             </h3>
             <span className="text-xs text-neutral-500">{sessionsHistory.length} phiên đã lưu</span>
           </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
+import { useSearchParams } from "next/navigation";
 import {
   HeartPulse,
   Plus,
@@ -15,8 +16,20 @@ import {
   Sparkles,
 } from "lucide-react";
 
-export default function HealthPage() {
+function HealthContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState<"metrics" | "habits">(
+    queryTab === "habits" ? "habits" : "metrics"
+  );
   const [logs, setLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (queryTab === "habits" || queryTab === "metrics") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [weightKg, setWeightKg] = useState("");
   const [sleepHours, setSleepHours] = useState("");
@@ -128,6 +141,30 @@ export default function HealthPage() {
               onChange={(e) => setDate(e.target.value)}
               className="bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
             />
+          </div>
+        </div>
+
+        {/* SUB-TABS: METRICS vs HABITS */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("metrics")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "metrics" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5 text-rose-400" />
+              <span>Chỉ số & Cân nặng, Vận động</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("habits")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "habits" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Giấc ngủ & Uống nước</span>
+            </button>
           </div>
         </div>
 
@@ -333,3 +370,18 @@ export default function HealthPage() {
     </AppShell>
   );
 }
+
+export default function HealthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải dữ liệu sức khỏe...
+        </div>
+      }
+    >
+      <HealthContent />
+    </Suspense>
+  );
+}
+

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
+import { useSearchParams } from "next/navigation";
 import {
   Wallet,
   ArrowDownLeft,
@@ -22,10 +23,19 @@ import {
   Check,
 } from "lucide-react";
 
-export default function FinancePage() {
+function FinanceContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
   const [data, setData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"transactions" | "budgets" | "debts">("transactions");
+  const [activeTab, setActiveTab] = useState<"transactions" | "accounts" | "budgets" | "debts">("transactions");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (queryTab && ["transactions", "accounts", "budgets", "debts"].includes(queryTab)) {
+      setActiveTab(queryTab as any);
+    }
+  }, [queryTab]);
 
   // Modals
   const [isTxnModalOpen, setIsTxnModalOpen] = useState(false);
@@ -353,8 +363,8 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* SUB-TABS: TRANSACTIONS / BUDGETS / DEBTS */}
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+        {/* SUB-TABS: TRANSACTIONS / ACCOUNTS / BUDGETS / DEBTS */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
           <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
             <button
               onClick={() => setActiveTab("transactions")}
@@ -362,7 +372,15 @@ export default function FinancePage() {
                 activeTab === "transactions" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
               }`}
             >
-              Lịch sử giao dịch ({transactions.length})
+              Thu chi & Dòng tiền ({transactions.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("accounts")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "accounts" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Sổ ví & Ngân hàng ({accounts.length})
             </button>
             <button
               onClick={() => setActiveTab("budgets")}
@@ -381,6 +399,16 @@ export default function FinancePage() {
               Sổ nợ & Cho vay ({debts.length})
             </button>
           </div>
+
+          {activeTab === "accounts" && (
+            <button
+              onClick={() => setIsAccModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/30 text-xs font-semibold transition flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm tài khoản / Ví</span>
+            </button>
+          )}
 
           {activeTab === "budgets" && (
             <button
@@ -402,6 +430,133 @@ export default function FinancePage() {
             </button>
           )}
         </div>
+
+        {/* TAB: ACCOUNTS (SỔ VÍ & NGÂN HÀNG CHUYÊN NGHIỆP) */}
+        {activeTab === "accounts" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Account Stats & Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-900 to-indigo-950/40">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Building className="w-4 h-4 text-indigo-400" />
+                  <span>Tổng số dư tất cả tài khoản</span>
+                </div>
+                <div className="text-2xl font-black text-white">
+                  {accounts.reduce((acc: number, cur: any) => acc + (cur.balance || 0), 0).toLocaleString("vi-VN")}đ
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Phân bổ qua {accounts.length} nguồn tiền
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-emerald-400" />
+                  <span>Ngân hàng & Thẻ ghi nợ</span>
+                </div>
+                <div className="text-2xl font-black text-emerald-400">
+                  {accounts
+                    .filter((a: any) => a.type === "bank" || a.type === "credit")
+                    .reduce((acc: number, cur: any) => acc + (cur.balance || 0), 0)
+                    .toLocaleString("vi-VN")}đ
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  {accounts.filter((a: any) => a.type === "bank" || a.type === "credit").length} tài khoản liên kết
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Wallet className="w-4 h-4 text-amber-400" />
+                  <span>Ví điện tử & Tiền mặt</span>
+                </div>
+                <div className="text-2xl font-black text-amber-400">
+                  {accounts
+                    .filter((a: any) => a.type === "e-wallet" || a.type === "cash")
+                    .reduce((acc: number, cur: any) => acc + (cur.balance || 0), 0)
+                    .toLocaleString("vi-VN")}đ
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  {accounts.filter((a: any) => a.type === "e-wallet" || a.type === "cash").length} ví khả dụng
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Bank Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {accounts.map((acc: any) => {
+                const isBank = acc.type === "bank";
+                const isWallet = acc.type === "e-wallet";
+                return (
+                  <div
+                    key={acc.id}
+                    className="relative overflow-hidden p-6 rounded-3xl border border-white/[0.1] bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800 shadow-xl flex flex-col justify-between group hover:border-indigo-500/50 transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                          <span className="text-xs uppercase font-bold tracking-wider text-neutral-400">
+                            {isBank ? "Ngân hàng" : isWallet ? "Ví điện tử" : "Tiền mặt"}
+                          </span>
+                        </div>
+                        <h4 className="text-lg font-bold text-white mt-1 group-hover:text-indigo-300 transition">
+                          {acc.name}
+                        </h4>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteItem("account", acc.id)}
+                        className="p-1.5 rounded-lg text-neutral-600 hover:text-rose-400 hover:bg-neutral-800/80 transition"
+                        title="Xóa tài khoản"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="my-6">
+                      <div className="text-xs text-neutral-500 mb-0.5">Số dư khả dụng</div>
+                      <div className="text-2xl font-black text-white tracking-tight">
+                        {acc.balance.toLocaleString("vi-VN")}đ
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between">
+                      <span className="font-mono text-xs text-neutral-400">
+                        •••• •••• {acc.id.slice(-4)}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setAccountId(acc.id);
+                          setIsTxnModalOpen(true);
+                        }}
+                        className="px-3 py-1 rounded-xl bg-white/[0.08] hover:bg-indigo-600 text-xs font-semibold text-white transition flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Ghi thu chi</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Add New Account Card */}
+              <button
+                onClick={() => setIsAccModalOpen(true)}
+                className="p-6 rounded-3xl border-2 border-dashed border-neutral-800 hover:border-indigo-500/50 bg-neutral-900/30 hover:bg-indigo-950/20 text-neutral-400 hover:text-indigo-300 transition flex flex-col items-center justify-center gap-3 min-h-[200px]"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm text-white">Thêm tài khoản / Ví mới</div>
+                  <div className="text-xs text-neutral-500 mt-0.5">
+                    Hỗ trợ Vietcombank, Techcombank, MoMo, ZaloPay...
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: TRANSACTIONS */}
         {activeTab === "transactions" && (
@@ -940,3 +1095,18 @@ export default function FinancePage() {
     </AppShell>
   );
 }
+
+export default function FinancePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải trung tâm tài chính...
+        </div>
+      }
+    >
+      <FinanceContent />
+    </Suspense>
+  );
+}
+

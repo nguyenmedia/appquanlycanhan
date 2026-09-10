@@ -84,22 +84,203 @@ export default function AppShell({ children }: AppShellProps) {
     router.push("/login");
   };
 
-  const navItems = [
-    { label: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Công việc", href: "/tasks", icon: CheckSquare },
-    { label: "Dự án", href: "/projects", icon: FolderKanban },
-    { label: "Lịch biểu", href: "/calendar", icon: Calendar },
-    { label: "Thói quen", href: "/habits", icon: Zap },
-    { label: "Mục tiêu (OKR)", href: "/goals", icon: Target },
-    { label: "Tài chính", href: "/finance", icon: Wallet },
-    { label: "Ghi chú", href: "/notes", icon: BookOpen },
-    { label: "Nhật ký", href: "/journal", icon: BookMarked },
-    { label: "Pomodoro", href: "/pomodoro", icon: Timer },
-    { label: "Sức khỏe", href: "/health", icon: HeartPulse },
-    { label: "Học tập", href: "/learning", icon: GraduationCap },
-    { label: "AI Assistant", href: "/ai", icon: Sparkles, badge: "AI" },
-    { label: "Báo cáo", href: "/analytics", icon: BarChart3 },
-    { label: "Hỗ trợ khách hàng", href: "/support", icon: LifeBuoy, badge: "24/7" },
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
+    "/dashboard": true,
+    "/tasks": true,
+    "/finance": true,
+    "/ai": true,
+  });
+
+  const toggleExpand = (href: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [href]: !prev[href],
+    }));
+  };
+
+  // Auto-expand menu if pathname matches
+  useEffect(() => {
+    if (pathname) {
+      const matchKey = Object.keys(expandedMenus).find((key) => pathname.startsWith(key));
+      if (matchKey && !expandedMenus[matchKey]) {
+        setExpandedMenus((prev) => ({ ...prev, [matchKey]: true }));
+      }
+    }
+  }, [pathname]);
+
+  const navGroups = [
+    {
+      title: "Năng Suất & Điều Hành",
+      items: [
+        {
+          label: "Tổng quan",
+          href: "/dashboard",
+          icon: LayoutDashboard,
+          subItems: [
+            { label: "Dashboard điều hành", href: "/dashboard" },
+            { label: "Thao tác nhanh", href: "/dashboard#quick-actions" },
+          ],
+        },
+        {
+          label: "Công việc",
+          href: "/tasks",
+          icon: CheckSquare,
+          subItems: [
+            { label: "Tất cả công việc", href: "/tasks" },
+            { label: "Bảng Kanban", href: "/tasks?view=kanban" },
+            { label: "Dạng danh sách", href: "/tasks?view=list" },
+            { label: "Việc khẩn cấp", href: "/tasks?priority=urgent" },
+            { label: "Đã hoàn thành", href: "/tasks?status=done" },
+          ],
+        },
+        {
+          label: "Dự án",
+          href: "/projects",
+          icon: FolderKanban,
+          subItems: [
+            { label: "Danh mục dự án", href: "/projects" },
+            { label: "Cột mốc & Tiến độ", href: "/projects?tab=milestones" },
+          ],
+        },
+        {
+          label: "Lịch biểu",
+          href: "/calendar",
+          icon: Calendar,
+          subItems: [
+            { label: "Lịch tổng hợp", href: "/calendar?filter=all" },
+            { label: "Hạn chót công việc", href: "/calendar?filter=tasks" },
+            { label: "Sự kiện & Cuộc hẹn", href: "/calendar?filter=events" },
+          ],
+        },
+        {
+          label: "Pomodoro Focus",
+          href: "/pomodoro",
+          icon: Timer,
+          subItems: [
+            { label: "Đồng hồ tập trung", href: "/pomodoro?tab=timer" },
+            { label: "Lịch sử Deep Work", href: "/pomodoro?tab=history" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Tài Chính & Dòng Tiền",
+      items: [
+        {
+          label: "Tài chính",
+          href: "/finance",
+          icon: Wallet,
+          subItems: [
+            { label: "Thu chi & Dòng tiền", href: "/finance?tab=transactions" },
+            { label: "Sổ ví & Ngân hàng", href: "/finance?tab=accounts" },
+            { label: "Ngân sách định mức", href: "/finance?tab=budgets" },
+            { label: "Sổ nợ & Vay mượn", href: "/finance?tab=debts" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Thân - Tâm - Trí",
+      items: [
+        {
+          label: "Thói quen",
+          href: "/habits",
+          icon: Zap,
+          subItems: [
+            { label: "Điểm danh hôm nay", href: "/habits?tab=today" },
+            { label: "Chuỗi Streak kỷ lục", href: "/habits?tab=streaks" },
+          ],
+        },
+        {
+          label: "Mục tiêu (OKR)",
+          href: "/goals",
+          icon: Target,
+          subItems: [
+            { label: "Mục tiêu Quý / Năm", href: "/goals?tab=all" },
+            { label: "Kết quả then chốt", href: "/goals?tab=results" },
+          ],
+        },
+        {
+          label: "Sức khỏe",
+          href: "/health",
+          icon: HeartPulse,
+          subItems: [
+            { label: "Chỉ số & Cân nặng", href: "/health?tab=metrics" },
+            { label: "Giấc ngủ & Nước uống", href: "/health?tab=habits" },
+          ],
+        },
+        {
+          label: "Nhật ký",
+          href: "/journal",
+          icon: BookMarked,
+          subItems: [
+            { label: "Nhật ký ngày", href: "/journal?tab=entry" },
+            { label: "Tâm trạng & Biết ơn", href: "/journal?tab=gratitude" },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Tri Thức & Trợ Lý AI",
+      items: [
+        {
+          label: "Ghi chú",
+          href: "/notes",
+          icon: BookOpen,
+          subItems: [
+            { label: "Tất cả tài liệu", href: "/notes?filter=all" },
+            { label: "Đã ghim quan trọng", href: "/notes?filter=pinned" },
+          ],
+        },
+        {
+          label: "Học tập",
+          href: "/learning",
+          icon: GraduationCap,
+          subItems: [
+            { label: "Tủ sách đang đọc", href: "/learning?tab=books" },
+            { label: "Khóa học & Kỹ năng", href: "/learning?tab=courses" },
+          ],
+        },
+        {
+          label: "AI Assistant",
+          href: "/ai",
+          icon: Sparkles,
+          badge: "AI",
+          subItems: [
+            { label: "AI Trò chuyện", href: "/ai?tab=chat" },
+            { label: "AI Lập kế hoạch", href: "/ai?tab=planner" },
+            { label: "AI Cố vấn tài chính", href: "/ai?tab=finance" },
+            { label: "AI Đánh giá tuần", href: "/ai?tab=review" },
+            { label: "AI Huấn luyện viên", href: "/ai?tab=coach" },
+          ],
+        },
+        {
+          label: "Báo cáo 360°",
+          href: "/analytics",
+          icon: BarChart3,
+          subItems: [
+            { label: "Báo cáo tổng hợp", href: "/analytics?tab=all" },
+            { label: "Xu hướng năng suất", href: "/analytics?tab=productivity" },
+            { label: "Phân tích tài chính", href: "/analytics?tab=finance" },
+            { label: "Sức khỏe & Thân tâm", href: "/analytics?tab=wellness" },
+          ],
+        },
+        {
+          label: "Hỗ trợ khách hàng",
+          href: "/support",
+          icon: LifeBuoy,
+          badge: "24/7",
+          subItems: [
+            { label: "Trung tâm CSKH 24/7", href: "/support" },
+            { label: "Gửi yêu cầu hỗ trợ", href: "/support#new-ticket" },
+          ],
+        },
+      ],
+    },
   ];
 
   const planName = user?.plan?.name || "Free";
@@ -123,7 +304,7 @@ export default function AppShell({ children }: AppShellProps) {
                 LifeOS
               </span>
               <span className="block text-[10px] uppercase font-semibold tracking-wider text-indigo-400 -mt-1">
-                Workspace
+                Workspace Pro
               </span>
             </div>
           </Link>
@@ -137,58 +318,114 @@ export default function AppShell({ children }: AppShellProps) {
           onClick={() => {
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }));
           }}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-400 hover:text-white hover:border-neutral-700 transition mb-4 shadow-sm"
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-400 hover:text-white hover:border-neutral-700 transition mb-3 shadow-sm"
         >
           <div className="flex items-center gap-2">
             <Search className="w-3.5 h-3.5" />
-            <span>Tìm kiếm...</span>
+            <span>Tìm kiếm nhanh...</span>
           </div>
           <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-[10px] text-neutral-400 border border-neutral-700">
             Ctrl K
           </kbd>
         </button>
 
-        {/* Navigation links */}
-        <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition ${
-                  isActive
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/60"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-neutral-400"}`} />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-400/20 text-indigo-300 font-semibold">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        {/* Navigation links with Groups & Collapsible Sub-Folders */}
+        <nav className="flex-1 space-y-4 overflow-y-auto pr-1 text-xs">
+          {navGroups.map((group, gIdx) => (
+            <div key={gIdx} className="space-y-1">
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                {group.title}
+              </div>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isTopActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const isExpanded = expandedMenus[item.href];
+                  const hasSub = item.subItems && item.subItems.length > 0;
+
+                  return (
+                    <div key={item.href} className="group">
+                      <div
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl font-medium transition cursor-pointer ${
+                          isTopActive
+                            ? "bg-indigo-600/90 text-white shadow-md shadow-indigo-600/25"
+                            : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/60"
+                        }`}
+                      >
+                        <Link
+                          href={item.href}
+                          className="flex items-center gap-2.5 flex-1 overflow-hidden"
+                        >
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${isTopActive ? "text-white" : "text-neutral-400"}`} />
+                          <span className="truncate text-sm">{item.label}</span>
+                        </Link>
+
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {item.badge && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-400/20 text-indigo-300 font-bold">
+                              {item.badge}
+                            </span>
+                          )}
+                          {hasSub && (
+                            <button
+                              onClick={(e) => toggleExpand(item.href, e)}
+                              className={`p-1 rounded-md hover:bg-white/10 transition ${
+                                isTopActive ? "text-white/80" : "text-neutral-500 hover:text-neutral-200"
+                              }`}
+                              title={isExpanded ? "Thu gọn" : "Mở rộng"}
+                            >
+                              <ChevronRight
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                  isExpanded ? "rotate-90" : ""
+                                }`}
+                              />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sub-items list (collapsible tree) */}
+                      {hasSub && isExpanded && (
+                        <div className="ml-4 pl-2.5 border-l border-white/[0.08] space-y-0.5 mt-1 mb-1">
+                          {item.subItems.map((sub, sIdx) => {
+                            return (
+                              <Link
+                                key={sIdx}
+                                href={sub.href}
+                                className="group/sub flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs text-neutral-400 hover:text-white hover:bg-white/[0.05] transition"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover/sub:bg-indigo-400 transition-colors" />
+                                <span className="truncate">{sub.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {/* Admin link if user has admin role */}
           {isSuperAdminOrAdmin && (
-            <Link
-              href="/admin"
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition mt-4 ${
-                pathname.startsWith("/admin")
-                  ? "bg-amber-600 text-white shadow-md shadow-amber-600/30"
-                  : "text-amber-400 hover:bg-amber-500/10"
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Quản trị SaaS</span>
-            </Link>
+            <div className="pt-2">
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-500/80">
+                Khu vực Quản trị
+              </div>
+              <Link
+                href="/admin"
+                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-sm font-medium transition ${
+                  pathname.startsWith("/admin")
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-600/30"
+                    : "text-amber-400 hover:bg-amber-500/10"
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Quản trị SaaS</span>
+              </Link>
+            </div>
           )}
         </nav>
 
@@ -309,32 +546,77 @@ export default function AppShell({ children }: AppShellProps) {
             </div>
           )}
 
-          <div className="space-y-1 mb-6">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 px-3 py-1">
-              Phân hệ tính năng
-            </div>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
-                    isActive
-                      ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/20"
-                      : "text-neutral-300 hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-indigo-400"}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-neutral-600"}`} />
-                </Link>
-              );
-            })}
+          <div className="space-y-4 mb-6">
+            {navGroups.map((group, gIdx) => (
+              <div key={gIdx} className="space-y-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 px-3 py-1">
+                  {group.title}
+                </div>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const isExpanded = expandedMenus[item.href];
+                    const hasSub = item.subItems && item.subItems.length > 0;
+
+                    return (
+                      <div key={item.href} className="space-y-1">
+                        <div
+                          className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
+                            isActive
+                              ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/20"
+                              : "text-neutral-300 hover:bg-white/[0.05]"
+                          }`}
+                        >
+                          <Link
+                            href={item.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 flex-1 overflow-hidden"
+                          >
+                            <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-indigo-400"}`} />
+                            <span className="truncate">{item.label}</span>
+                          </Link>
+                          <div className="flex items-center gap-1.5">
+                            {item.badge && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 font-semibold">
+                                {item.badge}
+                              </span>
+                            )}
+                            {hasSub && (
+                              <button
+                                onClick={(e) => toggleExpand(item.href, e)}
+                                className="p-1 rounded-lg hover:bg-white/10 text-neutral-400"
+                              >
+                                <ChevronRight
+                                  className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90 text-white" : ""}`}
+                                />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Mobile Sub-items */}
+                        {hasSub && isExpanded && (
+                          <div className="ml-5 pl-3 border-l border-white/[0.08] space-y-1 py-1">
+                            {item.subItems.map((sub, sIdx) => (
+                              <Link
+                                key={sIdx}
+                                href={sub.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-neutral-400 hover:text-white hover:bg-white/[0.05] transition"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400/60" />
+                                <span>{sub.label}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="pt-4 border-t border-white/[0.08] space-y-1">

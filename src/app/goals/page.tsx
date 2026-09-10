@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import UpgradeModal from "@/components/UpgradeModal";
+import { useSearchParams } from "next/navigation";
 import {
   Target,
   Plus,
@@ -11,10 +12,16 @@ import {
   Calendar,
   CheckSquare,
   Sparkles,
+  Award,
+  Flag,
 } from "lucide-react";
 
-export default function GoalsPage() {
+function GoalsContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
   const [goals, setGoals] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"all" | "results">(queryTab === "results" ? "results" : "all");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -26,6 +33,12 @@ export default function GoalsPage() {
   const [milestonesInput, setMilestonesInput] = useState("");
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+
+  useEffect(() => {
+    if (queryTab === "results" || queryTab === "all") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
 
   const loadGoals = async () => {
     try {
@@ -145,8 +158,150 @@ export default function GoalsPage() {
           </button>
         </div>
 
-        {/* GOALS LIST */}
-        {goals.length === 0 ? (
+        {/* SUB-TABS: OKR GOALS vs KEY RESULTS */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "all" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Mục tiêu Chiến lược ({goals.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("results")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "results" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Flag className="w-3.5 h-3.5 text-rose-400" />
+              <span>
+                Kết quả then chốt Key Results (
+                {goals.flatMap((g) => g.milestones || []).filter((m: any) => m.isCompleted).length}/
+                {goals.flatMap((g) => g.milestones || []).length})
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 2: KEY RESULTS DIRECT TRACKER */}
+        {activeTab === "results" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Key Results Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-900 to-rose-950/30">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Flag className="w-4 h-4 text-rose-400" />
+                  <span>Tổng Key Results được phân rã</span>
+                </div>
+                <div className="text-3xl font-black text-rose-400">
+                  {goals.flatMap((g) => g.milestones || []).length} kết quả
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Trực tiếp phục vụ {goals.length} mục tiêu chiến lược
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Kết quả then chốt đã hoàn tất</span>
+                </div>
+                <div className="text-3xl font-black text-emerald-400">
+                  {goals.flatMap((g) => g.milestones || []).filter((m: any) => m.isCompleted).length}
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Tỷ lệ đạt mục tiêu:{" "}
+                  {goals.flatMap((g) => g.milestones || []).length > 0
+                    ? Math.round(
+                        (goals.flatMap((g) => g.milestones || []).filter((m: any) => m.isCompleted).length /
+                          goals.flatMap((g) => g.milestones || []).length) *
+                          100
+                      )
+                    : 0}
+                  %
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <span>Chỉ số thành công OKR</span>
+                </div>
+                <div className="text-3xl font-black text-white">
+                  {goals.filter((g) => g.currentProgress >= g.targetValue).length}/{goals.length}
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Mục tiêu đã cán đích 100%
+                </div>
+              </div>
+            </div>
+
+            {/* Key Results Checklist by Goal */}
+            <div className="space-y-4">
+              {goals.map((goal) => {
+                const milestones = goal.milestones || [];
+                if (milestones.length === 0) return null;
+
+                return (
+                  <div
+                    key={goal.id}
+                    className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md">
+                          {goal.category}
+                        </span>
+                        <h4 className="font-bold text-sm text-white">{goal.title}</h4>
+                      </div>
+                      <span className="text-xs font-mono text-neutral-400">
+                        {goal.currentProgress}/{goal.targetValue} {goal.unit}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {milestones.map((m: any) => (
+                        <div
+                          key={m.id}
+                          onClick={() => handleToggleMilestone(goal.id, m.id)}
+                          className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition ${
+                            m.isCompleted
+                              ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-200"
+                              : "border-neutral-800 bg-neutral-950/50 text-neutral-300 hover:border-neutral-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              className={`w-5 h-5 rounded-lg border flex items-center justify-center transition ${
+                                m.isCompleted
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : "border-neutral-700 bg-neutral-800"
+                              }`}
+                            >
+                              {m.isCompleted && <CheckCircle2 className="w-3.5 h-3.5" />}
+                            </button>
+                            <span className={`text-xs ${m.isCompleted ? "line-through text-neutral-500" : ""}`}>
+                              {m.title}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-neutral-500">
+                            {m.isCompleted ? "Đạt kết quả ✓" : "Đang thực hiện"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 1: GOALS LIST */}
+        {activeTab === "all" && (goals.length === 0 ? (
           <div className="p-12 rounded-3xl border border-neutral-800 bg-neutral-900/40 text-center">
             <Target className="w-12 h-12 text-rose-400 mx-auto mb-3 opacity-60" />
             <h3 className="text-base font-bold text-white mb-1">Chưa có mục tiêu nào</h3>
@@ -252,7 +407,7 @@ export default function GoalsPage() {
               </div>
             ))}
           </div>
-        )}
+        ))}
 
         {/* MODAL */}
         {isModalOpen && (
@@ -359,3 +514,18 @@ export default function GoalsPage() {
     </AppShell>
   );
 }
+
+export default function GoalsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải mục tiêu OKR...
+        </div>
+      }
+    >
+      <GoalsContent />
+    </Suspense>
+  );
+}
+

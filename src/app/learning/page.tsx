@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   GraduationCap,
   Plus,
@@ -16,8 +17,14 @@ import {
   BookOpen,
 } from "lucide-react";
 
-export default function LearningPage() {
+function LearningContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
   const [items, setItems] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"all" | "books" | "courses">(
+    queryTab === "books" ? "books" : queryTab === "courses" ? "courses" : "all"
+  );
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -27,6 +34,12 @@ export default function LearningPage() {
   const [completedUnits, setCompletedUnits] = useState("0");
   const [unitType, setUnitType] = useState("trang");
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (queryTab === "books" || queryTab === "courses" || queryTab === "all") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
 
   const loadItems = async () => {
     try {
@@ -125,11 +138,54 @@ export default function LearningPage() {
           </button>
         </div>
 
+        {/* SUB-TABS: ALL vs BOOKS vs COURSES */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "all" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Tất cả ({items.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("books")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "books" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Tủ sách đang đọc ({items.filter((i) => i.type === "book").length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("courses")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "courses" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Video className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Khóa học & Kỹ năng ({items.filter((i) => i.type === "course").length})</span>
+            </button>
+          </div>
+        </div>
+
         {/* ITEMS LIST */}
-        {items.length === 0 ? (
+        {(activeTab === "books"
+          ? items.filter((i) => i.type === "book")
+          : activeTab === "courses"
+          ? items.filter((i) => i.type === "course")
+          : items
+        ).length === 0 ? (
           <div className="p-12 rounded-3xl border border-neutral-800 bg-neutral-900/40 text-center">
             <GraduationCap className="w-12 h-12 text-indigo-400 mx-auto mb-3 opacity-60" />
-            <h3 className="text-base font-bold text-white mb-1">Chưa có tài liệu học tập nào</h3>
+            <h3 className="text-base font-bold text-white mb-1">
+              {activeTab === "books"
+                ? "Chưa có cuốn sách nào trong tủ sách"
+                : activeTab === "courses"
+                ? "Chưa có khóa học nào được lưu"
+                : "Chưa có tài liệu học tập nào"}
+            </h3>
             <p className="text-xs text-neutral-400 mb-6">
               Lập danh sách những cuốn sách hay khóa học bạn muốn chinh phục trong năm nay.
             </p>
@@ -137,12 +193,17 @@ export default function LearningPage() {
               onClick={() => setIsModalOpen(true)}
               className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-medium text-xs shadow"
             >
-              Thêm mục đầu tiên
+              Thêm mục mới
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {items.map((item) => {
+            {(activeTab === "books"
+              ? items.filter((i) => i.type === "book")
+              : activeTab === "courses"
+              ? items.filter((i) => i.type === "course")
+              : items
+            ).map((item) => {
               const pct = item.totalUnits > 0 ? Math.round((item.completedUnits / item.totalUnits) * 100) : 0;
               return (
                 <div
@@ -338,3 +399,18 @@ export default function LearningPage() {
     </AppShell>
   );
 }
+
+export default function LearningPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải tủ sách học tập...
+        </div>
+      }
+    >
+      <LearningContent />
+    </Suspense>
+  );
+}
+

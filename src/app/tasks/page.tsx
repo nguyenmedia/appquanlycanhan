@@ -25,15 +25,20 @@ import {
 function TasksContent() {
   const searchParams = useSearchParams();
   const queryProjectId = searchParams.get("projectId");
+  const queryView = searchParams.get("view");
+  const queryPriority = searchParams.get("priority");
+  const queryStatus = searchParams.get("status");
+  const queryNew = searchParams.get("new");
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
-  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"kanban" | "list">(queryView === "list" ? "list" : "kanban");
+  const [filterPriority, setFilterPriority] = useState<string>(queryPriority || "all");
+  const [filterStatus, setFilterStatus] = useState<string>(queryStatus || "all");
   const [filterProject, setFilterProject] = useState<string>(queryProjectId || "all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(queryNew === "true");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
@@ -70,6 +75,30 @@ function TasksContent() {
       setProjectId(queryProjectId);
     }
   }, [queryProjectId]);
+
+  useEffect(() => {
+    if (queryView === "list" || queryView === "kanban") {
+      setViewMode(queryView);
+    }
+  }, [queryView]);
+
+  useEffect(() => {
+    if (queryPriority) {
+      setFilterPriority(queryPriority);
+    }
+  }, [queryPriority]);
+
+  useEffect(() => {
+    if (queryStatus) {
+      setFilterStatus(queryStatus);
+    }
+  }, [queryStatus]);
+
+  useEffect(() => {
+    if (queryNew === "true") {
+      setIsNewModalOpen(true);
+    }
+  }, [queryNew]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,12 +161,13 @@ function TasksContent() {
 
   const filteredTasks = tasks.filter((t) => {
     const matchPriority = filterPriority === "all" || t.priority === filterPriority;
+    const matchStatus = filterStatus === "all" || t.status === filterStatus;
     const matchProject = filterProject === "all" || t.projectId === filterProject;
     const matchSearch =
       !searchQuery.trim() ||
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchPriority && matchProject && matchSearch;
+    return matchPriority && matchStatus && matchProject && matchSearch;
   });
 
   const columns = [
@@ -182,6 +212,19 @@ function TasksContent() {
                 className="bg-neutral-900 border border-neutral-800 text-xs text-neutral-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-indigo-500 w-36 sm:w-48"
               />
             </div>
+
+            {/* Status Filter */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-neutral-900 border border-neutral-800 text-xs text-neutral-300 rounded-xl px-3 py-2 focus:outline-none"
+            >
+              <option value="all">Mọi trạng thái</option>
+              <option value="todo">Cần làm</option>
+              <option value="in_progress">Đang xử lý</option>
+              <option value="review">Đang rà soát</option>
+              <option value="done">Đã hoàn tất</option>
+            </select>
 
             {/* Project Filter */}
             <select

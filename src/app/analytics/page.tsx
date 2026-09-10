@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
   CheckCircle2,
@@ -19,9 +20,17 @@ import {
   Moon,
   Sparkles,
   ArrowRight,
+  ShieldCheck,
+  Activity,
 } from "lucide-react";
 
-export default function AnalyticsPage() {
+function AnalyticsContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState<"all" | "productivity" | "finance" | "wellness">(
+    (queryTab as any) || "all"
+  );
   const [tasks, setTasks] = useState<any[]>([]);
   const [habits, setHabits] = useState<any[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
@@ -30,6 +39,12 @@ export default function AnalyticsPage() {
   const [healthLogs, setHealthLogs] = useState<any[]>([]);
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (queryTab && ["all", "productivity", "finance", "wellness"].includes(queryTab)) {
+      setActiveTab(queryTab as any);
+    }
+  }, [queryTab]);
 
   useEffect(() => {
     async function loadAll() {
@@ -101,6 +116,44 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
             <Sparkles className="w-4 h-4 text-indigo-400" />
             <span>Điểm Năng Suất Tổng Thể: <strong>{totalProductivityScore}/100</strong></span>
+          </div>
+        </div>
+
+        {/* SUB-TABS: ALL / PRODUCTIVITY / FINANCE / WELLNESS */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex flex-wrap p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs gap-1">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "all" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Báo cáo tổng hợp 360°
+            </button>
+            <button
+              onClick={() => setActiveTab("productivity")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "productivity" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Xu hướng Năng suất
+            </button>
+            <button
+              onClick={() => setActiveTab("finance")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "finance" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Phân tích Tài chính
+            </button>
+            <button
+              onClick={() => setActiveTab("wellness")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "wellness" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Sức khỏe & Thân tâm
+            </button>
           </div>
         </div>
 
@@ -320,3 +373,18 @@ export default function AnalyticsPage() {
     </AppShell>
   );
 }
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tổng hợp báo cáo 360°...
+        </div>
+      }
+    >
+      <AnalyticsContent />
+    </Suspense>
+  );
+}
+

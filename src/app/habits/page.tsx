@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import UpgradeModal from "@/components/UpgradeModal";
+import { useSearchParams } from "next/navigation";
 import {
   Zap,
   Plus,
@@ -11,10 +12,16 @@ import {
   Flame,
   Award,
   Calendar,
+  Sparkles,
+  Trophy,
 } from "lucide-react";
 
-export default function HabitsPage() {
+function HabitsContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
   const [habits, setHabits] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"today" | "streaks">(queryTab === "streaks" ? "streaks" : "today");
   const [todayStr, setTodayStr] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +31,12 @@ export default function HabitsPage() {
   const [color, setColor] = useState("#10b981");
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+
+  useEffect(() => {
+    if (queryTab === "streaks" || queryTab === "today") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
 
   const loadData = async () => {
     try {
@@ -150,8 +163,145 @@ export default function HabitsPage() {
           </button>
         </div>
 
-        {/* HABITS GRID */}
-        {habits.length === 0 ? (
+        {/* SUB-TABS: TODAY CHECKLIST vs STREAKS HALL OF FAME */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("today")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "today" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Điểm danh hôm nay ({habits.filter((h) => h.completedToday).length}/{habits.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("streaks")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "streaks" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>Chuỗi Streak kỷ lục ({habits.reduce((max, h) => Math.max(max, h.streak || 0), 0)} ngày)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 2: STREAKS HALL OF FAME */}
+        {activeTab === "streaks" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Streak Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-900 to-amber-950/30">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-amber-400" />
+                  <span>Chuỗi Streak dài nhất hiện tại</span>
+                </div>
+                <div className="text-3xl font-black text-amber-400">
+                  {habits.reduce((max, h) => Math.max(max, h.streak || 0), 0)} ngày liên tiếp
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Giữ lửa kỷ luật không ngắt quãng
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Trophy className="w-4 h-4 text-emerald-400" />
+                  <span>Thói quen đạt mốc 21 ngày</span>
+                </div>
+                <div className="text-3xl font-black text-emerald-400">
+                  {habits.filter((h) => (h.streak || 0) >= 21).length}/{habits.length}
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Đã hình thành phản xạ thần kinh tự nhiên
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-indigo-400" />
+                  <span>Tổng số lượt check-in tích lũy</span>
+                </div>
+                <div className="text-3xl font-black text-white">
+                  {habits.reduce((acc, h) => acc + (h.streak || 0), 0)} lượt
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Toàn bộ nỗ lực không ngừng nghỉ
+                </div>
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-6 space-y-4">
+              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-amber-400" />
+                <span>Bảng vinh danh Thói quen kiên trì nhất</span>
+              </h3>
+
+              <div className="space-y-3">
+                {[...habits]
+                  .sort((a, b) => (b.streak || 0) - (a.streak || 0))
+                  .map((habit, idx) => {
+                    const streak = habit.streak || 0;
+                    const badge =
+                      streak >= 100
+                        ? { label: "Huyền thoại (100d+)", color: "text-purple-400 bg-purple-950/50 border-purple-500/30" }
+                        : streak >= 66
+                        ? { label: "Kỷ luật thép (66d+)", color: "text-amber-400 bg-amber-950/50 border-amber-500/30" }
+                        : streak >= 21
+                        ? { label: "Phản xạ tự nhiên (21d+)", color: "text-emerald-400 bg-emerald-950/50 border-emerald-500/30" }
+                        : streak >= 7
+                        ? { label: "Khởi đầu vững (7d+)", color: "text-indigo-400 bg-indigo-950/50 border-indigo-500/30" }
+                        : { label: "Đang tạo đà", color: "text-neutral-400 bg-neutral-800 border-neutral-700" };
+
+                    return (
+                      <div
+                        key={habit.id}
+                        className="p-4 rounded-2xl bg-neutral-950/60 border border-neutral-800 flex items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
+                              idx === 0
+                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                : idx === 1
+                                ? "bg-neutral-300/20 text-neutral-200 border border-neutral-300/30"
+                                : idx === 2
+                                ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                                : "bg-neutral-800 text-neutral-500"
+                            }`}
+                          >
+                            #{idx + 1}
+                          </span>
+                          <div>
+                            <div className="font-semibold text-sm text-white">{habit.title}</div>
+                            <div className="text-[11px] text-neutral-500 mt-0.5">
+                              Tần suất: {habit.frequency === "daily" ? "Hàng ngày" : "Hàng tuần"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${badge.color}`}
+                          >
+                            {badge.label}
+                          </span>
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold text-sm">
+                            <Flame className="w-4 h-4 text-amber-400" />
+                            <span>{streak} ngày</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 1: HABITS GRID (TODAY CHECKLIST) */}
+        {activeTab === "today" && (habits.length === 0 ? (
           <div className="p-12 rounded-3xl border border-neutral-800 bg-neutral-900/40 text-center">
             <Zap className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-60" />
             <h3 className="text-base font-bold text-white mb-1">Chưa có thói quen nào</h3>
@@ -247,7 +397,7 @@ export default function HabitsPage() {
               </div>
             ))}
           </div>
-        )}
+        ))}
 
         {/* MODAL HABIT */}
         {isModalOpen && (
@@ -327,3 +477,18 @@ export default function HabitsPage() {
     </AppShell>
   );
 }
+
+export default function HabitsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải thói quen...
+        </div>
+      }
+    >
+      <HabitsContent />
+    </Suspense>
+  );
+}
+

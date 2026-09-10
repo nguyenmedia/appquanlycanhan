@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import UpgradeModal from "@/components/UpgradeModal";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Sparkles,
   Send,
@@ -20,8 +21,26 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-export default function AIPage() {
+function AIContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
   const [feature, setFeature] = useState<"ai_chat" | "ai_planner" | "ai_review" | "ai_finance" | "ai_coach">("ai_chat");
+
+  useEffect(() => {
+    if (queryTab) {
+      const tabMap: Record<string, "ai_chat" | "ai_planner" | "ai_review" | "ai_finance" | "ai_coach"> = {
+        chat: "ai_chat",
+        planner: "ai_planner",
+        finance: "ai_finance",
+        review: "ai_review",
+        coach: "ai_coach",
+      };
+      if (tabMap[queryTab]) {
+        setFeature(tabMap[queryTab]);
+      }
+    }
+  }, [queryTab]);
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string; credits?: number }>>([
     {
       role: "assistant",
@@ -315,3 +334,18 @@ export default function AIPage() {
     </AppShell>
   );
 }
+
+export default function AIPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang khởi tạo AI Assistant...
+        </div>
+      }
+    >
+      <AIContent />
+    </Suspense>
+  );
+}
+

@@ -1,17 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
+import { useSearchParams } from "next/navigation";
 import {
   BookMarked,
   Sparkles,
   Smile,
   Calendar,
   Save,
+  Heart,
 } from "lucide-react";
 
-export default function JournalPage() {
+function JournalContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState<"entry" | "gratitude">(
+    queryTab === "gratitude" ? "gratitude" : "entry"
+  );
   const [entries, setEntries] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (queryTab === "gratitude" || queryTab === "entry") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [mood, setMood] = useState(4);
   const [title, setTitle] = useState("");
@@ -101,10 +115,117 @@ export default function JournalPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* EDITOR COLUMN (2 Cols) */}
-          <div className="lg:col-span-2">
-            <form onSubmit={handleSave} className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-6 space-y-5 shadow-xl">
+        {/* SUB-TABS: ENTRY vs GRATITUDE */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("entry")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "entry" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Viết nhật ký ngày ({entries.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("gratitude")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "gratitude" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5 text-rose-400" />
+              <span>Tâm trạng & Lòng biết ơn ({entries.filter((e) => e.gratitude).length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 2: GRATITUDE WALL & MOOD TRACKER */}
+        {activeTab === "gratitude" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-900 to-rose-950/30">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Heart className="w-4 h-4 text-rose-400" />
+                  <span>Khoảnh khắc biết ơn</span>
+                </div>
+                <div className="text-3xl font-black text-rose-400">
+                  {entries.filter((e) => e.gratitude).length} điều
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Nuôi dưỡng năng lượng tích cực
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Smile className="w-4 h-4 text-amber-400" />
+                  <span>Tâm trạng trung bình</span>
+                </div>
+                <div className="text-3xl font-black text-white">
+                  {entries.length > 0
+                    ? (entries.reduce((sum, e) => sum + (e.mood || 3), 0) / entries.length).toFixed(1)
+                    : "4.0"}{" "}
+                  / 5.0
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Trạng thái cảm xúc ổn định
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl border border-neutral-800 bg-neutral-900/70">
+                <div className="text-xs text-neutral-400 mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <span>Bài học đúc kết</span>
+                </div>
+                <div className="text-3xl font-black text-indigo-400">
+                  {entries.filter((e) => e.learnings).length} bài học
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-2">
+                  Trí tuệ tích lũy từ cuộc sống
+                </div>
+              </div>
+            </div>
+
+            {/* Gratitude Notes Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {entries.filter((e) => e.gratitude).length === 0 ? (
+                <div className="col-span-2 p-12 text-center text-xs text-neutral-500 rounded-3xl border border-neutral-800 bg-neutral-900/40">
+                  Chưa có dòng biết ơn nào. Chuyển sang tab "Viết nhật ký ngày" để ghi lại điều bạn biết ơn hôm nay!
+                </div>
+              ) : (
+                entries
+                  .filter((e) => e.gratitude)
+                  .map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="p-5 rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-900/90 to-neutral-900/50 space-y-3 shadow-lg"
+                    >
+                      <div className="flex items-center justify-between text-xs text-neutral-400 pb-2 border-b border-neutral-800">
+                        <span className="font-semibold text-white">{entry.date}</span>
+                        <span className="text-lg">
+                          {moods.find((m) => m.score === entry.mood)?.emoji || "🙂"}
+                        </span>
+                      </div>
+                      <div className="text-xs text-rose-300 font-medium leading-relaxed italic">
+                        "{entry.gratitude}"
+                      </div>
+                      {entry.learnings && (
+                        <div className="pt-2 border-t border-neutral-800/80 text-[11px] text-neutral-400">
+                          <strong className="text-neutral-300">Bài học:</strong> {entry.learnings}
+                        </div>
+                      )}
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 1: DAILY ENTRY FORM & HISTORY */}
+        {activeTab === "entry" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* EDITOR COLUMN (2 Cols) */}
+            <div className="lg:col-span-2">
+              <form onSubmit={handleSave} className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-6 space-y-5 shadow-xl">
               {/* Date & Mood Selection */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
                 <div className="flex items-center gap-2">
@@ -250,7 +371,22 @@ export default function JournalPage() {
             </div>
           </div>
         </div>
+      )}
       </div>
     </AppShell>
+  );
+}
+
+export default function JournalPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải nhật ký...
+        </div>
+      }
+    >
+      <JournalContent />
+    </Suspense>
   );
 }

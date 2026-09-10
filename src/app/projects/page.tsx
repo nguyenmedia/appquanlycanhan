@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import AppShell from "@/components/layout/AppShell";
 import UpgradeModal from "@/components/UpgradeModal";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   FolderKanban,
   Plus,
@@ -14,11 +15,24 @@ import {
   ArrowRight,
   CheckSquare,
   ExternalLink,
+  Milestone,
 } from "lucide-react";
 
-export default function ProjectsPage() {
+function ProjectsContent() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+
   const [projects, setProjects] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"projects" | "milestones">(
+    queryTab === "milestones" ? "milestones" : "projects"
+  );
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (queryTab === "milestones" || queryTab === "projects") {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -155,8 +169,160 @@ export default function ProjectsPage() {
           </button>
         </div>
 
-        {/* PROJECTS LIST */}
-        {projects.length === 0 ? (
+        {/* SUB-TABS: PROJECTS vs MILESTONES */}
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="inline-flex p-1 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs">
+            <button
+              onClick={() => setActiveTab("projects")}
+              className={`px-4 py-2 rounded-xl font-semibold transition ${
+                activeTab === "projects" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Danh mục dự án ({projects.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("milestones")}
+              className={`px-4 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 ${
+                activeTab === "milestones" ? "bg-neutral-800 text-white shadow" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              <Milestone className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Cột mốc & Tiến độ Roadmap</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 2: MILESTONES & ROADMAP */}
+        {activeTab === "milestones" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {projects.length === 0 ? (
+              <div className="p-12 rounded-3xl border border-neutral-800 bg-neutral-900/40 text-center">
+                <FolderKanban className="w-12 h-12 text-indigo-400 mx-auto mb-3 opacity-60" />
+                <h3 className="text-base font-bold text-white mb-1">Chưa có dự án nào</h3>
+                <p className="text-xs text-neutral-400 mb-6">
+                  Tạo dự án để theo dõi cột mốc và tiến độ thực thi.
+                </p>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-medium text-xs shadow"
+                >
+                  Tạo dự án mới
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {projects.map((proj) => {
+                  const tasksList = proj.tasks || [];
+                  const doneTasks = tasksList.filter((t: any) => t.status === "done").length;
+                  const pct = tasksList.length > 0 ? Math.round((doneTasks / tasksList.length) * 100) : 0;
+
+                  return (
+                    <div
+                      key={proj.id}
+                      className="p-6 rounded-3xl border border-neutral-800 bg-neutral-900/70 space-y-4 shadow-xl"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-lg flex-shrink-0"
+                            style={{ backgroundColor: proj.color || "#6366f1" }}
+                          />
+                          <div>
+                            <h3 className="font-bold text-base text-white">{proj.name}</h3>
+                            <div className="text-xs text-neutral-400 mt-0.5 flex items-center gap-3">
+                              {proj.targetDate && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                                  Hạn chót: {new Date(proj.targetDate).toLocaleDateString("vi-VN")}
+                                </span>
+                              )}
+                              <span>•</span>
+                              <span>
+                                {doneTasks}/{tasksList.length} công việc hoàn thành
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-black text-indigo-400 font-mono">{pct}%</span>
+                          <Link
+                            href={`/tasks?projectId=${proj.id}`}
+                            className="px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs text-white font-semibold flex items-center gap-1.5 transition"
+                          >
+                            <span>Xem bảng Kanban</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: proj.color || "#6366f1",
+                          }}
+                        />
+                      </div>
+
+                      {/* Tasks breakdown in Roadmap */}
+                      <div className="space-y-2 pt-1">
+                        <div className="text-xs font-semibold text-neutral-400">
+                          Các nhiệm vụ thuộc cột mốc dự án:
+                        </div>
+                        {tasksList.length === 0 ? (
+                          <div className="text-xs text-neutral-500 italic py-2">
+                            Chưa có đầu việc nào. Bấm "Thêm việc" để gán nhiệm vụ vào dự án.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {tasksList.map((t: any) => (
+                              <div
+                                key={t.id}
+                                className="p-3 rounded-2xl bg-neutral-950/60 border border-neutral-800/80 flex items-center justify-between text-xs"
+                              >
+                                <div className="flex items-center gap-2.5 overflow-hidden">
+                                  <div
+                                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                      t.status === "done" ? "bg-emerald-400" : "bg-neutral-600"
+                                    }`}
+                                  />
+                                  <span
+                                    className={`truncate ${
+                                      t.status === "done" ? "line-through text-neutral-500" : "text-white"
+                                    }`}
+                                  >
+                                    {t.title}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded capitalize font-medium flex-shrink-0 ${
+                                    t.priority === "urgent"
+                                      ? "bg-rose-950 text-rose-400"
+                                      : t.priority === "high"
+                                      ? "bg-amber-950 text-amber-400"
+                                      : "bg-neutral-800 text-neutral-400"
+                                  }`}
+                                >
+                                  {t.priority}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 1: PROJECTS LIST */}
+        {activeTab === "projects" && (projects.length === 0 ? (
           <div className="p-12 rounded-3xl border border-neutral-800 bg-neutral-900/40 text-center">
             <FolderKanban className="w-12 h-12 text-indigo-400 mx-auto mb-3 opacity-60" />
             <h3 className="text-base font-bold text-white mb-1">Chưa có dự án nào</h3>
@@ -250,7 +416,7 @@ export default function ProjectsPage() {
               </div>
             ))}
           </div>
-        )}
+        ))}
 
         {/* MODAL CREATE PROJECT */}
         {isModalOpen && (
@@ -395,3 +561,18 @@ export default function ProjectsPage() {
     </AppShell>
   );
 }
+
+export default function ProjectsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-sm text-neutral-400">
+          Đang tải dự án...
+        </div>
+      }
+    >
+      <ProjectsContent />
+    </Suspense>
+  );
+}
+
