@@ -1,0 +1,665 @@
+// Prisma Schema for LIFEOS SaaS Platform
+// Multi-user + Subscription + Payments + AI Ledger + CRM + Life Modules
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// USER & AUTHENTICATION
+// -------------------------------------------------------------
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  passwordHash     String
+  role             String       @default("USER") // USER, ADMIN, SUPER_ADMIN, SUPPORT
+  status           String       @default("ACTIVE") // ACTIVE, SUSPENDED, DELETED
+  referralCode     String       @unique
+  referredById     String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  profile          UserProfile?
+  subscriptions    Subscription[]
+  paymentTxns      PaymentTransaction[]
+  invoices         Invoice[]
+  referralsMade    Referral[]   @relation("Referrer")
+  referralsReceived Referral[]  @relation("Referred")
+  aiLedgers        AICreditLedger[]
+  aiUsages         AIUsage[]
+  tasks            Task[]
+  projects         Project[]
+  calendarEvents   CalendarEvent[]
+  habits           Habit[]
+  habitLogs        HabitLog[]
+  goals            Goal[]
+  financeAccounts  FinanceAccount[]
+  financeTxns      FinanceTransaction[]
+  budgets          Budget[]
+  debts            Debt[]
+  notes            Note[]
+  journalEntries   JournalEntry[]
+  documents        DocumentItem[]
+  contacts         Contact[]
+  healthLogs       HealthLog[]
+  learningItems    LearningItem[]
+  pomodoroSessions PomodoroSession[]
+  supportTickets   SupportTicket[]
+  supportMessages  SupportMessage[]
+  announcementReads AnnouncementRead[]
+  crmProfile       CustomerCRM?
+  auditLogs        AdminAuditLog[]
+}
+
+model UserProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName            String   @default("LifeOS User")
+  avatarUrl           String?
+  phone               String?
+  bio                 String?
+  timezone            String   @default("Asia/Ho_Chi_Minh")
+  currency            String   @default("VND")
+  onboardingCompleted Boolean  @default(false)
+  onboardingGoals     String?  // JSON string array
+  aiAllowed           Boolean  @default(true)
+  preferencesJson     String?  // JSON preferences (theme, notification toggles)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// -------------------------------------------------------------
+// SAAS PRICING, PLANS & LIMITS
+// -------------------------------------------------------------
+model Plan {
+  id             String        @id @default(cuid())
+  name           String        @unique // Free, Pro, Premium
+  slug           String        @unique // free, pro, premium
+  description    String
+  priceMonthly   Float         @default(0)
+  priceYearly    Float         @default(0)
+  currency       String        @default("VND")
+  isPopular      Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  isPublic       Boolean       @default(true)
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  features       PlanFeature[]
+  limits         PlanLimit[]
+  subscriptions  Subscription[]
+}
+
+model PlanFeature {
+  id         String   @id @default(cuid())
+  planId     String
+  plan       Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  featureKey String   // e.g. "ai_assistant", "ai_planner", "advanced_analytics", "export_data"
+  isEnabled  Boolean  @default(true)
+
+  @@unique([planId, featureKey])
+}
+
+model PlanLimit {
+  id         String   @id @default(cuid())
+  planId     String
+  plan       Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  limitKey   String   // e.g. "projects", "tasks", "habits", "goals", "ai_requests", "storage_mb"
+  limitValue Int      // -1 means unlimited
+
+  @@unique([planId, limitKey])
+}
+
+// -------------------------------------------------------------
+// SUBSCRIPTIONS & LIFECYCLE
+// -------------------------------------------------------------
+model Subscription {
+  id                     String    @id @default(cuid())
+  userId                 String
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   Plan      @relation(fields: [planId], references: [id])
+  status                 String    @default("active") // trialing, active, past_due, paused, cancelled, expired
+  billingCycle           String    @default("monthly") // monthly, yearly
+  price                  Float     @default(0)
+  currency               String    @default("VND")
+  startDate              DateTime  @default(now())
+  currentPeriodStart     DateTime  @default(now())
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean   @default(false)
+  cancelledAt            DateTime?
+  provider               String    @default("internal") // vnpay, momo, stripe, internal
+  providerSubscriptionId String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  events                 SubscriptionEvent[]
+  transactions           PaymentTransaction[]
+}
+
+model SubscriptionEvent {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  eventType      String       // created, renewed, cancelled, upgraded, downgraded
+  detailsJson    String?
+  createdAt      DateTime     @default(now())
+}
+
+// -------------------------------------------------------------
+// PAYMENTS & INVOICES
+// -------------------------------------------------------------
+model PaymentTransaction {
+  id                    String        @id @default(cuid())
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId        String?
+  subscription          Subscription? @relation(fields: [subscriptionId], references: [id])
+  provider              String        // vnpay, momo, stripe
+  providerTransactionId String?
+  idempotencyKey        String        @unique
+  amount                Float
+  currency              String        @default("VND")
+  status                String        @default("pending") // pending, processing, success, failed, refunded, cancelled
+  paymentMethod         String?
+  metadataJson          String?
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  invoices              Invoice[]
+}
+
+model Invoice {
+  id            String             @id @default(cuid())
+  invoiceNumber String             @unique
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactionId String?
+  transaction   PaymentTransaction? @relation(fields: [transactionId], references: [id])
+  planName      String
+  billingCycle  String
+  amount        Float
+  currency      String             @default("VND")
+  taxAmount     Float              @default(0)
+  provider      String
+  status        String             @default("paid") // paid, pending, void
+  invoicePdfUrl String?
+  createdAt     DateTime           @default(now())
+}
+
+// -------------------------------------------------------------
+// COUPONS & REFERRAL PROGRAM
+// -------------------------------------------------------------
+model Coupon {
+  id                 String             @id @default(cuid())
+  code               String             @unique
+  name               String
+  discountType       String             @default("percentage") // percentage, fixed
+  discountValue      Float
+  maxRedemptions     Int                @default(100)
+  timesRedeemed      Int                @default(0)
+  perUserLimit       Int                @default(1)
+  validFrom          DateTime           @default(now())
+  validUntil         DateTime
+  minimumAmount      Float              @default(0)
+  applicablePlansJson String?           // JSON array of plan slugs, or null for all
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+
+  redemptions        CouponRedemption[]
+}
+
+model CouponRedemption {
+  id             String   @id @default(cuid())
+  couponId       String
+  coupon         Coupon   @relation(fields: [couponId], references: [id])
+  userId         String
+  transactionId  String?
+  discountAmount Float
+  redeemedAt     DateTime @default(now())
+}
+
+model Referral {
+  id             String    @id @default(cuid())
+  referrerId     String
+  referrer       User      @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId String
+  referredUser   User      @relation("Referred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  code           String
+  status         String    @default("pending") // pending, qualified, rewarded
+  rewardDays     Int       @default(7)
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+}
+
+// -------------------------------------------------------------
+// AI SYSTEM & CREDITS LEDGER
+// -------------------------------------------------------------
+model AICreditLedger {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String   // grant, usage, refund, bonus, expiry, adjustment
+  amount       Int      // positive for grant/bonus, negative for usage
+  balanceAfter Int
+  feature      String?  // ai_chat, ai_planner, ai_review, ai_finance, ai_life_coach
+  model        String?
+  description  String?
+  createdAt    DateTime @default(now())
+}
+
+model AIUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature       String
+  model         String   @default("gpt-4o-mini")
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  creditsUsed   Int      @default(1)
+  estimatedCost Float    @default(0)
+  promptSummary String?
+  createdAt     DateTime @default(now())
+}
+
+// -------------------------------------------------------------
+// PRODUCTIVITY & TASKS
+// -------------------------------------------------------------
+model Project {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  color       String    @default("#6366f1")
+  icon        String?   @default("folder")
+  status      String    @default("active") // active, completed, archived
+  targetDate  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tasks       Task[]
+}
+
+model Task {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title       String
+  description String?
+  status      String            @default("todo") // todo, in_progress, review, done
+  priority    String            @default("medium") // low, medium, high, urgent
+  dueDate     DateTime?
+  completedAt DateTime?
+  sortOrder   Int               @default(0)
+  labelsJson  String?           // JSON array of strings
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  pomodoros   PomodoroSession[]
+}
+
+// -------------------------------------------------------------
+// CALENDAR & SCHEDULE
+// -------------------------------------------------------------
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  isAllDay    Boolean  @default(false)
+  category    String   @default("work") // work, personal, meeting, health
+  color       String   @default("#3b82f6")
+  location    String?
+  recurrence  String?  // none, daily, weekly, monthly
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// -------------------------------------------------------------
+// HABITS & GOALS (OKR)
+// -------------------------------------------------------------
+model Habit {
+  id                String     @id @default(cuid())
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  frequency         String     @default("daily") // daily, weekly
+  targetDaysPerWeek Int        @default(7)
+  color             String     @default("#10b981")
+  icon              String?    @default("check-circle")
+  streak            Int        @default(0)
+  bestStreak        Int        @default(0)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  logs              HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // format YYYY-MM-DD
+  completed Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+}
+
+model Goal {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  category        String          @default("personal") // personal, career, financial, health
+  targetDate      DateTime?
+  currentProgress Float           @default(0)
+  targetValue     Float           @default(100)
+  unit            String          @default("%")
+  status          String          @default("in_progress") // in_progress, achieved, paused
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  milestones      GoalMilestone[]
+}
+
+model GoalMilestone {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  title       String
+  isCompleted Boolean  @default(false)
+  dueDate     DateTime?
+  sortOrder   Int      @default(0)
+}
+
+// -------------------------------------------------------------
+// PERSONAL FINANCE & BUDGETING
+// -------------------------------------------------------------
+model FinanceAccount {
+  id           String               @id @default(cuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  type         String               @default("bank") // cash, bank, credit_card, investment, e_wallet
+  balance      Float                @default(0)
+  currency     String               @default("VND")
+  color        String               @default("#3b82f6")
+  isDefault    Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  transactions FinanceTransaction[]
+}
+
+model FinanceTransaction {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     FinanceAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type        String         // expense, income, transfer
+  amount      Float
+  category    String         // food, rent, shopping, salary, bills, investment, health
+  description String?
+  date        DateTime       @default(now())
+  payee       String?
+  toAccountId String?
+  receiptUrl  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Budget {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category          String
+  monthlyLimit      Float
+  spentSoFar        Float    @default(0)
+  monthYear         String   // e.g. "2026-09"
+  alertThresholdPct Int      @default(80) // trigger alert when >= 80%
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, category, monthYear])
+}
+
+model Debt {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String    // lent (cho vay), borrowed (nợ)
+  personName  String
+  totalAmount Float
+  paidAmount  Float     @default(0)
+  dueDate     DateTime?
+  notes       String?
+  isSettled   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// -------------------------------------------------------------
+// NOTES, JOURNAL, DOCUMENTS & CONTACTS
+// -------------------------------------------------------------
+model Note {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  isPinned   Boolean  @default(false)
+  isArchived Boolean  @default(false)
+  tagsJson   String?  // JSON array of strings
+  folder     String?  @default("General")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model JournalEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       String   // format YYYY-MM-DD
+  mood       Int      @default(3) // 1 to 5
+  title      String?
+  reflection String
+  gratitude  String?
+  learnings  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model DocumentItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  fileUrl   String
+  fileType  String   // pdf, doc, image, spreadsheet, text
+  sizeBytes Int      @default(0)
+  category  String   @default("Uncategorized")
+  tagsJson  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  email           String?
+  phone           String?
+  company         String?
+  role            String?
+  relationship    String?   // friend, family, colleague, client, partner
+  notes           String?
+  tagsJson        String?
+  lastContactDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// -------------------------------------------------------------
+// HEALTH, LEARNING & TIME TRACKING
+// -------------------------------------------------------------
+model HealthLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            String   // format YYYY-MM-DD
+  weightKg        Float?
+  sleepHours      Float?
+  waterMl         Int?
+  exerciseMinutes Int?
+  moodScore       Int?     // 1-5
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model LearningItem {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  type           String    @default("book") // book, course, article, skill
+  author         String?
+  totalUnits     Int       @default(100)
+  completedUnits Int       @default(0)
+  unitType       String    @default("pages") // pages, hours, lessons, %
+  status         String    @default("reading") // reading, completed, plan_to_read
+  notes          String?
+  rating         Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model PomodoroSession {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId          String?
+  task            Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  durationMinutes Int       @default(25)
+  type            String    @default("work") // work, short_break, long_break
+  completed       Boolean   @default(true)
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+}
+
+// -------------------------------------------------------------
+// SAAS ADMIN, CRM, SUPPORT & AUDIT
+// -------------------------------------------------------------
+model CustomerCRM {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lifecycleStage String    @default("lead") // lead, registered, trial, paid, active, at_risk, churned
+  healthScore    Int       @default(100)    // 0 - 100
+  tagsJson       String?   // JSON array of strings
+  lastActivityAt DateTime  @default(now())
+  internalNotes  String?
+  assignedTo     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model SupportTicket {
+  id           String           @id @default(cuid())
+  ticketNumber String           @unique
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject      String
+  category     String           @default("general") // general, billing, technical, feature_request
+  priority     String           @default("medium")  // low, medium, high, urgent
+  status       String           @default("open")    // open, in_progress, waiting, resolved, closed
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  messages     SupportMessage[]
+}
+
+model SupportMessage {
+  id              String        @id @default(cuid())
+  ticketId        String
+  ticket          SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId        String
+  user            User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderRole      String        @default("USER") // USER, SUPPORT, ADMIN
+  message         String
+  attachmentsJson String?
+  createdAt       DateTime      @default(now())
+}
+
+model Announcement {
+  id             String             @id @default(cuid())
+  title          String
+  message        String
+  targetAudience String             @default("all") // all, free, pro, premium, new_users
+  startDate      DateTime           @default(now())
+  endDate        DateTime?
+  ctaText        String?
+  ctaLink        String?
+  priority       String             @default("info") // info, warning, promotion
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+
+  reads          AnnouncementRead[]
+}
+
+model AnnouncementRead {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String
+  adminUser   User     @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  action      String   // e.g. "update_user_plan", "suspend_user", "create_coupon"
+  entityType  String   // user, plan, coupon, system_setting
+  entityId    String?
+  detailsJson String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
