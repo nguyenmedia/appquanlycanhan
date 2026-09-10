@@ -136,6 +136,16 @@ export async function processSuccessfulPayment({
     },
   });
 
+  try {
+    await supabase
+      .from("subscriptions")
+      .update({ status: "replaced", updated_at: now.toISOString() })
+      .eq("user_id", transaction.userId)
+      .eq("status", "active");
+  } catch (sbSubRepErr) {
+    console.warn("[Payment Activation] Supabase mark old subscriptions replaced error:", sbSubRepErr);
+  }
+
   // 6. Tạo gói cước mới ACTIVE chuẩn xác
   const subscription = await prisma.subscription.create({
     data: {
@@ -205,7 +215,7 @@ export async function processSuccessfulPayment({
   const currentBalance = lastLedger ? lastLedger.balanceAfter : 0;
   const newBalance = currentBalance + aiCredits;
 
-  await prisma.aICreditLedger.create({
+  const newLedger = await prisma.aICreditLedger.create({
     data: {
       userId: transaction.userId,
       type: "grant",
@@ -215,6 +225,21 @@ export async function processSuccessfulPayment({
       description: `Kích hoạt gói ${plan.name} (${billingCycle === "yearly" ? "12 tháng" : "30 ngày"})`,
     },
   });
+
+  try {
+    await supabase.from("ai_credit_ledger").insert({
+      id: newLedger.id,
+      user_id: transaction.userId,
+      type: "grant",
+      amount: aiCredits,
+      balance_after: newBalance,
+      feature: "subscription_upgrade",
+      description: `Kích hoạt gói ${plan.name} (${billingCycle === "yearly" ? "12 tháng" : "30 ngày"})`,
+      created_at: now.toISOString(),
+    });
+  } catch (sbAiErr) {
+    console.warn("[Payment Activation] Supabase push ai credit ledger error:", sbAiErr);
+  }
 
   // 9. Cập nhật hồ sơ CRM
   await prisma.customerCRM.upsert({

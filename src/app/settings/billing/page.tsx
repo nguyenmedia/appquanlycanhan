@@ -168,14 +168,22 @@ export default function BillingPage() {
               <div className="flex justify-between text-xs mb-2">
                 <span className="text-neutral-400">AI Credits khả dụng</span>
                 <span className="font-bold text-amber-400">
-                  {usage?.aiCredits?.balance || 0} credits
+                  {loading ? "..." : `${usage?.aiCredits?.balance ?? user?.aiCredits?.balance ?? 0} credits`}
                 </span>
               </div>
               <div className="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-amber-400 h-full rounded-full"
+                  className="bg-amber-400 h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${Math.min(100, Math.max(10, ((usage?.aiCredits?.balance || 0) / (usage?.aiCredits?.limit || 300)) * 100))}%`,
+                    width: `${Math.min(
+                      100,
+                      Math.max(
+                        10,
+                        (((usage?.aiCredits?.balance ?? user?.aiCredits?.balance) || 0) /
+                          (usage?.aiCredits?.limit || (plan?.slug === "premium" ? 1000 : 300))) *
+                          100
+                      )
+                    )}%`,
                   }}
                 />
               </div>
@@ -198,12 +206,16 @@ export default function BillingPage() {
               <div>
                 <span className="font-semibold text-white">Hóa đơn #{sub?.id?.slice(-8).toUpperCase() || "INV-001"}</span>
                 <span className="block text-neutral-500">
-                  Gói {plan?.name} • Thanh toán qua {sub?.provider?.toUpperCase() || "VNPAY"}
+                  Gói {plan?.name || "LifeOS Premium"} ({sub?.billingCycle === "yearly" ? "Hàng năm" : "Hàng tháng"}) • Thanh toán qua {sub?.provider?.toUpperCase() || "VIETQR"}
                 </span>
               </div>
               <div className="text-right">
-                <span className="font-bold text-white">{plan?.priceMonthly?.toLocaleString("vi-VN") || 0}đ</span>
-                <span className="block text-[10px] text-emerald-400">Đã thanh toán</span>
+                <span className="font-bold text-white">
+                  {sub?.price
+                    ? sub.price.toLocaleString("vi-VN") + "đ"
+                    : (sub?.billingCycle === "yearly" ? plan?.priceYearly : plan?.priceMonthly)?.toLocaleString("vi-VN") || "0"}đ
+                </span>
+                <span className="block text-[10px] text-emerald-400 font-medium">Đã thanh toán</span>
               </div>
             </div>
           </div>

@@ -73,7 +73,7 @@ export async function getCurrentUser(req: NextRequest) {
     console.warn("[Auth] Local prisma findUnique error:", dbErr);
   }
 
-  // Cross-device / Vercel cloud fallback to Supabase
+  // Cross-device / Vercel cloud fallback to Supabase nếu chưa có user trên local
   if (!user) {
     try {
       const { data: sbUser } = await supabase
@@ -150,6 +150,69 @@ export async function getCurrentUser(req: NextRequest) {
     } catch (sbErr) {
       console.warn("[Auth] Supabase fallback error:", sbErr);
     }
+  }
+
+  // Cross-check: Nếu user chưa có active subscription trên local, kiểm tra Supabase Cloud
+  if (user && (!user.subscriptions || user.subscriptions.length === 0)) {
+    try {
+      const { data: cloudSub } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .gte("current_period_end", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cloudSub) {
+        const planSlug =
+          cloudSub.plan_id === "plan_premium"
+            ? "premium"
+            : cloudSub.plan_id === "plan_pro"
+            ? "pro"
+            : "free";
+
+        const localPlan = await prisma.plan.findUnique({
+          where: { slug: planSlug },
+          include: { features: true, limits: true },
+        });
+
+        if (localPlan) {
+          try {
+            await prisma.subscription.upsert({
+              where: { id: cloudSub.id },
+              update: {
+                status: "active",
+                currentPeriodEnd: new Date(cloudSub.current_period_end),
+              },
+              create: {
+                id: cloudSub.id,
+                userId: user.id,
+                planId: localPlan.id,
+                status: "active",
+                billingCycle: cloudSub.billing_cycle || "yearly",
+                price: Number(cloudSub.price || 0),
+                currency: cloudSub.currency || "VND",
+                startDate: cloudSub.start_date ? new Date(cloudSub.start_date) : new Date(),
+                currentPeriodStart: cloudSub.current_period_start ? new Date(cloudSub.current_period_start) : new Date(),
+                currentPeriodEnd: new Date(cloudSub.current_period_end),
+                provider: cloudSub.provider || "vietqr",
+                providerSubscriptionId: cloudSub.provider_subscription_id,
+              },
+            });
+
+            const refreshedSub = await prisma.subscription.findUnique({
+              where: { id: cloudSub.id },
+              include: { plan: { include: { features: true, limits: true } } },
+            });
+            if (refreshedSub) {
+              user.subscriptions = [refreshedSub];
+            }
+          } catch (upsertErr) {}
+        }
+      }
+    } catch (e) {}
   }
 
   if (!user || user.status === "SUSPENDED") return null;

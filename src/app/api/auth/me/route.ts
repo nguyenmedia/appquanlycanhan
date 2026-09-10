@@ -20,6 +20,15 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    let activeSub = user.subscriptions && user.subscriptions[0];
+    if (!activeSub && activePlan?.slug !== "free") {
+      activeSub = await prisma.subscription.findFirst({
+        where: { userId: user.id, status: "active" },
+        include: { plan: { include: { features: true, limits: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
     return NextResponse.json({
       authenticated: true,
       user: {
@@ -29,7 +38,7 @@ export async function GET(req: NextRequest) {
         referralCode: user.referralCode,
         profile: user.profile,
         plan: activePlan,
-        subscription: user.subscriptions[0] || null,
+        subscription: activeSub || null,
         aiCredits,
         announcements: activeAnnouncements,
       },

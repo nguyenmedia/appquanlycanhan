@@ -113,7 +113,8 @@ export async function syncCoreAdminData(force = false) {
     // 2. SYNC SUBSCRIPTIONS TỪ SUPABASE CLOUD
     const { data: cloudSubs, error: subsErr } = await supabase
       .from("subscriptions")
-      .select("*");
+      .select("*")
+      .order("created_at", { ascending: true });
 
     if (!subsErr && Array.isArray(cloudSubs)) {
       for (const cs of cloudSubs) {
@@ -237,6 +238,44 @@ export async function syncCoreAdminData(force = false) {
           });
         } catch (e) {
           // ignore single crm sync err
+        }
+      }
+    }
+
+    // 5. SYNC AI CREDIT LEDGERS TỪ SUPABASE CLOUD
+    const { data: cloudAi, error: aiErr } = await supabase
+      .from("ai_credit_ledger")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (!aiErr && Array.isArray(cloudAi)) {
+      for (const ca of cloudAi) {
+        try {
+          await prisma.aICreditLedger.upsert({
+            where: { id: ca.id },
+            update: {
+              userId: ca.user_id,
+              type: ca.type || "grant",
+              amount: Number(ca.amount || 0),
+              balanceAfter: Number(ca.balance_after || 0),
+              feature: ca.feature,
+              model: ca.model,
+              description: ca.description,
+            },
+            create: {
+              id: ca.id,
+              userId: ca.user_id,
+              type: ca.type || "grant",
+              amount: Number(ca.amount || 0),
+              balanceAfter: Number(ca.balance_after || 0),
+              feature: ca.feature,
+              model: ca.model,
+              description: ca.description,
+              createdAt: ca.created_at ? new Date(ca.created_at) : new Date(),
+            },
+          });
+        } catch (e) {
+          // ignore single ai sync err
         }
       }
     }
@@ -558,6 +597,23 @@ export async function uploadAllToSupabase() {
       );
     }
     report.system_settings = { uploaded: settings.length };
+
+    // 13. AI CREDIT LEDGER
+    const aiLedgers = await prisma.aICreditLedger.findMany();
+    for (const al of aiLedgers) {
+      await supabase.from("ai_credit_ledger").upsert({
+        id: al.id,
+        user_id: al.userId,
+        type: al.type,
+        amount: al.amount,
+        balance_after: al.balanceAfter,
+        feature: al.feature,
+        model: al.model,
+        description: al.description,
+        created_at: toIso(al.createdAt),
+      });
+    }
+    report.ai_credit_ledger = { uploaded: aiLedgers.length };
 
     const duration = Date.now() - startTime;
 
