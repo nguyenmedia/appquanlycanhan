@@ -18,21 +18,248 @@ export interface SyncStats {
 
 const toIso = (d: any) => (d ? new Date(d).toISOString() : null);
 
+export const planSlugToCloudId: Record<string, string> = {
+  free: "plan_free",
+  pro: "plan_pro",
+  premium: "plan_premium",
+};
+
+export const planIdMapToLocal: Record<string, string> = {
+  plan_free: "cmtu4liml000ik5mcigjneziv",
+  plan_pro: "cmtu4limv000jk5mcuzxoiayc",
+  plan_premium: "cmtu4lin5000kk5mcg128nxfm",
+  free: "cmtu4liml000ik5mcigjneziv",
+  pro: "cmtu4limv000jk5mcuzxoiayc",
+  premium: "cmtu4lin5000kk5mcg128nxfm",
+};
+
+export const planIdMapToCloud: Record<string, string> = {
+  cmtu4liml000ik5mcigjneziv: "plan_free",
+  cmtu4limv000jk5mcuzxoiayc: "plan_pro",
+  cmtu4lin5000kk5mcg128nxfm: "plan_premium",
+  free: "plan_free",
+  pro: "plan_pro",
+  premium: "plan_premium",
+};
+
+/**
+ * ĐỒNG BỘ HAI CHIỀU THỜI GIAN THỰC (CORE ADMIN DATA)
+ * Đồng bộ Users, Subscriptions, Payment Transactions, và Customer CRM
+ * Đảm bảo Localhost và Vercel luôn có chung nguồn sự thật 100%.
+ */
+let lastCoreSyncTime = 0;
+
+export async function syncCoreAdminData(force = false) {
+  const now = Date.now();
+  // Giới hạn tần suất: Không sync quá 1 lần mỗi 3 giây trừ khi force
+  if (!force && now - lastCoreSyncTime < 3000) {
+    return { success: true, cached: true };
+  }
+  lastCoreSyncTime = now;
+
+  try {
+    // 1. SYNC USERS & PROFILES TỪ SUPABASE CLOUD
+    const { data: cloudUsers, error: usersErr } = await supabase
+      .from("users")
+      .select("*, profile:user_profiles(*)");
+
+    if (!usersErr && Array.isArray(cloudUsers)) {
+      for (const cu of cloudUsers) {
+        try {
+          await prisma.user.upsert({
+            where: { id: cu.id },
+            update: {
+              email: cu.email,
+              role: cu.role || "USER",
+              status: cu.status || "ACTIVE",
+              referralCode: cu.referral_code || cu.id,
+              referredById: cu.referred_by_id,
+            },
+            create: {
+              id: cu.id,
+              email: cu.email,
+              passwordHash: cu.password_hash || "$2a$10$Defau1tCl0udP4ssw0rdHashForSyncPurposeOnly",
+              role: cu.role || "USER",
+              status: cu.status || "ACTIVE",
+              referralCode: cu.referral_code || `REF_${cu.id.substring(0, 6)}`,
+              referredById: cu.referred_by_id,
+              createdAt: cu.created_at ? new Date(cu.created_at) : new Date(),
+            },
+          });
+
+          const prof = Array.isArray(cu.profile) ? cu.profile[0] : cu.profile;
+          if (prof) {
+            await prisma.userProfile.upsert({
+              where: { userId: cu.id },
+              update: {
+                fullName: prof.full_name || "LifeOS User",
+                avatarUrl: prof.avatar_url,
+                phone: prof.phone,
+              },
+              create: {
+                userId: cu.id,
+                fullName: prof.full_name || "LifeOS User",
+                avatarUrl: prof.avatar_url,
+                phone: prof.phone,
+              },
+            });
+          }
+        } catch (e) {
+          // ignore single user sync err
+        }
+      }
+    }
+
+    // 2. SYNC SUBSCRIPTIONS TỪ SUPABASE CLOUD
+    const { data: cloudSubs, error: subsErr } = await supabase
+      .from("subscriptions")
+      .select("*");
+
+    if (!subsErr && Array.isArray(cloudSubs)) {
+      for (const cs of cloudSubs) {
+        try {
+          const localPlanId = planIdMapToLocal[cs.plan_id] || "cmtu4limv000jk5mcuzxoiayc";
+          await prisma.subscription.upsert({
+            where: { id: cs.id },
+            update: {
+              userId: cs.user_id,
+              planId: localPlanId,
+              status: cs.status || "active",
+              billingCycle: cs.billing_cycle || "monthly",
+              price: Number(cs.price || 0),
+              currency: cs.currency || "VND",
+              startDate: cs.start_date ? new Date(cs.start_date) : new Date(),
+              currentPeriodStart: cs.current_period_start ? new Date(cs.current_period_start) : new Date(),
+              currentPeriodEnd: cs.current_period_end ? new Date(cs.current_period_end) : new Date(Date.now() + 30 * 86400000),
+              cancelAtPeriodEnd: Boolean(cs.cancel_at_period_end),
+              cancelledAt: cs.cancelled_at ? new Date(cs.cancelled_at) : null,
+              provider: cs.provider || "vietqr",
+              providerSubscriptionId: cs.provider_subscription_id,
+            },
+            create: {
+              id: cs.id,
+              userId: cs.user_id,
+              planId: localPlanId,
+              status: cs.status || "active",
+              billingCycle: cs.billing_cycle || "monthly",
+              price: Number(cs.price || 0),
+              currency: cs.currency || "VND",
+              startDate: cs.start_date ? new Date(cs.start_date) : new Date(),
+              currentPeriodStart: cs.current_period_start ? new Date(cs.current_period_start) : new Date(),
+              currentPeriodEnd: cs.current_period_end ? new Date(cs.current_period_end) : new Date(Date.now() + 30 * 86400000),
+              cancelAtPeriodEnd: Boolean(cs.cancel_at_period_end),
+              cancelledAt: cs.cancelled_at ? new Date(cs.cancelled_at) : null,
+              provider: cs.provider || "vietqr",
+              providerSubscriptionId: cs.provider_subscription_id,
+              createdAt: cs.created_at ? new Date(cs.created_at) : new Date(),
+            },
+          });
+        } catch (e) {
+          // ignore single sub sync err
+        }
+      }
+    }
+
+    // 3. SYNC PAYMENT TRANSACTIONS TỪ SUPABASE CLOUD
+    const { data: cloudTxns, error: txErr } = await supabase
+      .from("payment_transactions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!txErr && Array.isArray(cloudTxns)) {
+      for (const ctx of cloudTxns) {
+        try {
+          await prisma.paymentTransaction.upsert({
+            where: { id: ctx.id },
+            update: {
+              userId: ctx.user_id,
+              subscriptionId: ctx.subscription_id,
+              provider: ctx.provider || "vietqr",
+              providerTransactionId: ctx.provider_transaction_id,
+              idempotencyKey: ctx.idempotency_key || ctx.id,
+              amount: Number(ctx.amount || 0),
+              currency: ctx.currency || "VND",
+              status: ctx.status || "pending",
+              paymentMethod: ctx.payment_method || (ctx.provider || "VIETQR").toUpperCase(),
+              metadataJson: ctx.metadata_json,
+              paidAt: ctx.paid_at ? new Date(ctx.paid_at) : null,
+            },
+            create: {
+              id: ctx.id,
+              userId: ctx.user_id,
+              subscriptionId: ctx.subscription_id,
+              provider: ctx.provider || "vietqr",
+              providerTransactionId: ctx.provider_transaction_id,
+              idempotencyKey: ctx.idempotency_key || ctx.id,
+              amount: Number(ctx.amount || 0),
+              currency: ctx.currency || "VND",
+              status: ctx.status || "pending",
+              paymentMethod: ctx.payment_method || (ctx.provider || "VIETQR").toUpperCase(),
+              metadataJson: ctx.metadata_json,
+              paidAt: ctx.paid_at ? new Date(ctx.paid_at) : null,
+              createdAt: ctx.created_at ? new Date(ctx.created_at) : new Date(),
+            },
+          });
+        } catch (e) {
+          // ignore single txn sync err
+        }
+      }
+    }
+
+    // 4. SYNC CUSTOMER CRM TỪ SUPABASE CLOUD
+    const { data: cloudCrm, error: crmErr } = await supabase
+      .from("customer_crm")
+      .select("*");
+
+    if (!crmErr && Array.isArray(cloudCrm)) {
+      for (const cc of cloudCrm) {
+        try {
+          await prisma.customerCRM.upsert({
+            where: { userId: cc.user_id },
+            update: {
+              lifecycleStage: cc.lifecycle_stage || "registered",
+              healthScore: cc.health_score ?? 100,
+              tagsJson: cc.tags_json,
+              lastActivityAt: cc.last_activity_at ? new Date(cc.last_activity_at) : new Date(),
+              internalNotes: cc.internal_notes,
+              assignedTo: cc.assigned_to,
+            },
+            create: {
+              id: cc.id || `crm_${cc.user_id}`,
+              userId: cc.user_id,
+              lifecycleStage: cc.lifecycle_stage || "registered",
+              healthScore: cc.health_score ?? 100,
+              tagsJson: cc.tags_json,
+              lastActivityAt: cc.last_activity_at ? new Date(cc.last_activity_at) : new Date(),
+              internalNotes: cc.internal_notes,
+              assignedTo: cc.assigned_to,
+            },
+          });
+        } catch (e) {
+          // ignore single crm sync err
+        }
+      }
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.warn("[syncCoreAdminData] Cloud sync warning:", err?.message);
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * UPLOAD TOÀN BỘ DỮ LIỆU TỪ SQLITE LÊN SUPABASE CLOUD
+ */
 export async function uploadAllToSupabase() {
   const startTime = Date.now();
   const report: Record<string, { uploaded: number; error?: string }> = {};
 
   try {
-    const planSlugToId: Record<string, string> = {
-      free: "plan_free",
-      pro: "plan_pro",
-      premium: "plan_premium",
-    };
-
     // 1. PLANS
     const plans = await prisma.plan.findMany();
     for (const p of plans) {
-      const targetId = planSlugToId[p.slug] || p.id;
+      const targetId = planSlugToCloudId[p.slug] || p.id;
       await supabase.from("plans").upsert({
         id: targetId,
         name: p.name,
@@ -54,39 +281,37 @@ export async function uploadAllToSupabase() {
     // 2. PLAN FEATURES & LIMITS
     const planFeatures = await prisma.planFeature.findMany({ include: { plan: true } });
     for (const pf of planFeatures as any[]) {
-      const targetPlanId = planSlugToId[pf.plan?.slug || ""] || "plan_pro";
+      const targetPlanId = planSlugToCloudId[pf.plan?.slug || ""] || "plan_pro";
       await supabase.from("plan_features").upsert({
         id: `pf_${targetPlanId}_${pf.featureKey}`,
         plan_id: targetPlanId,
         feature_key: pf.featureKey,
-        feature_name: pf.featureName || pf.featureKey,
-        is_included: pf.isIncluded ?? true,
-        value_json: pf.valueJson || null,
+        feature_name: pf.featureName,
+        is_included: pf.isIncluded,
+        value_json: pf.valueJson,
       });
     }
     report.plan_features = { uploaded: planFeatures.length };
 
     const planLimits = await prisma.planLimit.findMany({ include: { plan: true } });
     for (const pl of planLimits as any[]) {
-      const targetPlanId = planSlugToId[pl.plan?.slug || ""] || "plan_pro";
+      const targetPlanId = planSlugToCloudId[pl.plan?.slug || ""] || "plan_pro";
       await supabase.from("plan_limits").upsert({
         id: `pl_${targetPlanId}_${pl.limitKey}`,
         plan_id: targetPlanId,
         limit_key: pl.limitKey,
         limit_value: pl.limitValue,
-        period: pl.period || "forever",
+        period: pl.period,
       });
     }
     report.plan_limits = { uploaded: planLimits.length };
 
     // 3. COUPONS
     const coupons = await prisma.coupon.findMany();
-    for (const c of coupons as any[]) {
+    for (const c of coupons) {
       await supabase.from("coupons").upsert({
         id: c.id,
         code: c.code,
-        name: c.name || c.code,
-        description: c.description || c.name || "",
         discount_type: c.discountType,
         discount_value: c.discountValue,
         max_uses: c.maxRedemptions || 100,
@@ -101,7 +326,7 @@ export async function uploadAllToSupabase() {
     }
     report.coupons = { uploaded: coupons.length };
 
-    // 4. USERS (With user_id isolation)
+    // 4. USERS
     const users = await prisma.user.findMany();
     for (const u of users) {
       await supabase.from("users").upsert({
@@ -143,17 +368,22 @@ export async function uploadAllToSupabase() {
     // 6. SUBSCRIPTIONS
     const subs = await prisma.subscription.findMany({ include: { plan: true } });
     for (const s of subs as any[]) {
-      const targetPlanId = planSlugToId[s.plan?.slug || ""] || "plan_pro";
+      const targetPlanId = planSlugToCloudId[s.plan?.slug || ""] || planIdMapToCloud[s.planId] || "plan_pro";
       await supabase.from("subscriptions").upsert({
         id: s.id,
         user_id: s.userId,
         plan_id: targetPlanId,
         status: s.status,
-        billing_interval: "monthly",
+        billing_cycle: s.billingCycle || "monthly",
+        price: s.price || 0,
+        currency: s.currency || "VND",
+        start_date: toIso(s.startDate),
         current_period_start: toIso(s.currentPeriodStart),
         current_period_end: toIso(s.currentPeriodEnd),
         cancel_at_period_end: s.cancelAtPeriodEnd ?? false,
         cancelled_at: toIso(s.cancelledAt),
+        provider: s.provider || "internal",
+        provider_subscription_id: s.providerSubscriptionId,
         created_at: toIso(s.createdAt),
         updated_at: toIso(s.updatedAt),
       });
@@ -166,22 +396,41 @@ export async function uploadAllToSupabase() {
       await supabase.from("payment_transactions").upsert({
         id: t.id,
         user_id: t.userId,
-        idempotency_key: t.idempotencyKey,
-        provider: t.provider,
+        subscription_id: t.subscriptionId,
+        provider: t.provider || "vietqr",
         provider_transaction_id: t.providerTransactionId,
+        idempotency_key: t.idempotencyKey,
         amount: t.amount,
         currency: t.currency,
         status: t.status,
         payment_method: t.paymentMethod,
         metadata_json: t.metadataJson,
-        error_message: null,
-        created_at: toIso(t.createdAt),
         paid_at: toIso(t.paidAt),
+        created_at: toIso(t.createdAt),
+        updated_at: toIso(t.updatedAt),
       });
     }
     report.payment_transactions = { uploaded: txns.length };
 
-    // 8. PROJECTS & TASKS (User isolated)
+    // 8. CUSTOMER CRM
+    const crms = await prisma.customerCRM.findMany();
+    for (const c of crms) {
+      await supabase.from("customer_crm").upsert({
+        id: c.id,
+        user_id: c.userId,
+        lifecycle_stage: c.lifecycleStage,
+        health_score: c.healthScore,
+        tags_json: c.tagsJson,
+        last_activity_at: toIso(c.lastActivityAt),
+        internal_notes: c.internalNotes,
+        assigned_to: c.assignedTo,
+        created_at: toIso(c.createdAt),
+        updated_at: toIso(c.updatedAt),
+      });
+    }
+    report.customer_crm = { uploaded: crms.length };
+
+    // 9. PROJECTS & TASKS
     const projects = await prisma.project.findMany();
     for (const pr of projects) {
       await supabase.from("projects").upsert({
@@ -218,7 +467,7 @@ export async function uploadAllToSupabase() {
     }
     report.tasks = { uploaded: tasks.length };
 
-    // 9. HABITS & GOALS (User isolated)
+    // 10. HABITS & GOALS
     const habits = await prisma.habit.findMany();
     for (const h of habits as any[]) {
       await supabase.from("habits").upsert({
@@ -248,17 +497,18 @@ export async function uploadAllToSupabase() {
         description: g.description,
         category: g.category,
         target_value: g.targetValue,
-        current_value: g.currentProgress || 0,
+        current_value: g.currentValue,
         unit: g.unit,
+        start_date: toIso(g.startDate),
         target_date: toIso(g.targetDate),
-        status: g.status,
+        is_completed: g.isCompleted,
         created_at: toIso(g.createdAt),
         updated_at: toIso(g.updatedAt),
       });
     }
     report.goals = { uploaded: goals.length };
 
-    // 10. FINANCE (User isolated)
+    // 11. FINANCE ACCOUNTS & TRANSACTIONS
     const accounts = await prisma.financeAccount.findMany();
     for (const a of accounts as any[]) {
       await supabase.from("finance_accounts").upsert({
@@ -269,7 +519,6 @@ export async function uploadAllToSupabase() {
         balance: a.balance,
         currency: a.currency,
         color: a.color,
-        icon: "wallet",
         is_default: a.isDefault,
         created_at: toIso(a.createdAt),
         updated_at: toIso(a.updatedAt),
@@ -277,100 +526,24 @@ export async function uploadAllToSupabase() {
     }
     report.finance_accounts = { uploaded: accounts.length };
 
-    const finTxns = await prisma.financeTransaction.findMany();
-    for (const f of finTxns as any[]) {
+    const fTxns = await prisma.financeTransaction.findMany();
+    for (const ft of fTxns as any[]) {
       await supabase.from("finance_transactions").upsert({
-        id: f.id,
-        user_id: f.userId,
-        account_id: f.accountId,
-        amount: f.amount,
-        type: f.type,
-        category: f.category,
-        description: f.description,
-        date: toIso(f.date) || new Date().toISOString(),
-        receipt_url: f.receiptUrl,
-        is_recurring: false,
-        created_at: toIso(f.createdAt),
-        updated_at: toIso(f.updatedAt),
+        id: ft.id,
+        user_id: ft.userId,
+        account_id: ft.accountId,
+        type: ft.type,
+        amount: ft.amount,
+        category: ft.category,
+        description: ft.description,
+        date: toIso(ft.date),
+        created_at: toIso(ft.createdAt),
+        updated_at: toIso(ft.updatedAt),
       });
     }
-    report.finance_transactions = { uploaded: finTxns.length };
+    report.finance_transactions = { uploaded: fTxns.length };
 
-    // 11. NOTES & JOURNALS (User isolated)
-    const notes = await prisma.note.findMany();
-    for (const n of notes as any[]) {
-      await supabase.from("notes").upsert({
-        id: n.id,
-        user_id: n.userId,
-        title: n.title,
-        content: n.content,
-        tags_json: n.tagsJson,
-        is_pinned: n.isPinned,
-        is_archived: n.isArchived,
-        created_at: toIso(n.createdAt),
-        updated_at: toIso(n.updatedAt),
-      });
-    }
-    report.notes = { uploaded: notes.length };
-
-    const journals = await prisma.journalEntry.findMany();
-    for (const j of journals as any[]) {
-      await supabase.from("journal_entries").upsert({
-        id: j.id,
-        user_id: j.userId,
-        date: j.date,
-        title: j.title || "Nhật ký",
-        content: j.reflection || "",
-        reflection: j.reflection || "",
-        mood_score: j.mood || 5,
-        gratitude_notes: j.gratitude || "",
-        learnings: j.learnings || "",
-        created_at: toIso(j.createdAt),
-        updated_at: toIso(j.updatedAt),
-      });
-    }
-    report.journal_entries = { uploaded: journals.length };
-
-    // 12. HEALTH LOGS (User isolated)
-    const healthLogs = await prisma.healthLog.findMany();
-    for (const hl of healthLogs as any[]) {
-      await supabase.from("health_logs").upsert({
-        id: hl.id,
-        user_id: hl.userId,
-        date: hl.date,
-        weight_kg: hl.weightKg,
-        sleep_hours: hl.sleepHours,
-        water_ml: hl.waterMl,
-        exercise_minutes: hl.exerciseMinutes,
-        mood_score: hl.moodScore,
-        notes: hl.notes,
-        created_at: toIso(hl.createdAt),
-      });
-    }
-    report.health_logs = { uploaded: healthLogs.length };
-
-    // 13. LEARNING ITEMS (User isolated)
-    const learning = await prisma.learningItem.findMany();
-    for (const l of learning as any[]) {
-      await supabase.from("learning_items").upsert({
-        id: l.id,
-        user_id: l.userId,
-        title: l.title,
-        type: l.type,
-        author: l.author,
-        total_units: l.totalUnits,
-        completed_units: l.completedUnits,
-        unit_type: l.unitType,
-        status: l.status,
-        notes: l.notes,
-        rating: l.rating,
-        created_at: toIso(l.createdAt),
-        updated_at: toIso(l.updatedAt),
-      });
-    }
-    report.learning_items = { uploaded: learning.length };
-
-    // 14. SYSTEM SETTINGS
+    // 12. SYSTEM SETTINGS
     const settings = await prisma.systemSetting.findMany();
     for (const st of settings as any[]) {
       await supabase.from("system_settings").upsert(
@@ -424,14 +597,11 @@ export async function getSyncStats(): Promise<SyncStats> {
     { key: "coupons", local: () => prisma.coupon.count(), remote: "coupons" },
     { key: "subscriptions", local: () => prisma.subscription.count(), remote: "subscriptions" },
     { key: "payment_transactions", local: () => prisma.paymentTransaction.count(), remote: "payment_transactions" },
+    { key: "customer_crm", local: () => prisma.customerCRM.count(), remote: "customer_crm" },
     { key: "tasks", local: () => prisma.task.count(), remote: "tasks" },
     { key: "habits", local: () => prisma.habit.count(), remote: "habits" },
     { key: "goals", local: () => prisma.goal.count(), remote: "goals" },
     { key: "finance_transactions", local: () => prisma.financeTransaction.count(), remote: "finance_transactions" },
-    { key: "notes", local: () => prisma.note.count(), remote: "notes" },
-    { key: "journal_entries", local: () => prisma.journalEntry.count(), remote: "journal_entries" },
-    { key: "health_logs", local: () => prisma.healthLog.count(), remote: "health_logs" },
-    { key: "learning_items", local: () => prisma.learningItem.count(), remote: "learning_items" },
     { key: "system_settings", local: () => prisma.systemSetting.count(), remote: "system_settings" },
   ];
 

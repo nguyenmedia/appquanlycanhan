@@ -235,28 +235,47 @@ export async function processSuccessfulPayment({
 
   // 10. ĐỒNG BỘ THỜI GIAN THỰC LÊN SUPABASE CLOUD
   try {
+    const supabasePlanId =
+      plan.slug === "premium" ? "plan_premium" : plan.slug === "pro" ? "plan_pro" : "plan_free";
+
     await supabase.from("subscriptions").upsert({
       id: subscription.id,
       user_id: transaction.userId,
-      plan_id: plan.id,
+      plan_id: supabasePlanId,
       status: "active",
       billing_cycle: billingCycle,
       price: amount,
+      currency: "VND",
       start_date: now.toISOString(),
       current_period_start: now.toISOString(),
       current_period_end: periodEnd.toISOString(),
-      provider,
+      provider: provider || "vietqr",
+      provider_subscription_id: providerTransactionId || subscription.id,
+      updated_at: now.toISOString(),
     });
 
     await supabase.from("payment_transactions").upsert({
       id: updatedTx.id,
       user_id: transaction.userId,
       subscription_id: subscription.id,
+      provider: provider || "vietqr",
+      provider_transaction_id: providerTransactionId || updatedTx.id,
+      idempotency_key: transaction.idempotencyKey,
       amount,
       currency: "VND",
       status: "success",
-      payment_method: provider.toUpperCase(),
+      payment_method: (transaction.paymentMethod || provider).toUpperCase(),
+      metadata_json: transaction.metadataJson,
       paid_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    });
+
+    await supabase.from("customer_crm").upsert({
+      user_id: transaction.userId,
+      lifecycle_stage: "paid",
+      health_score: 100,
+      last_activity_at: now.toISOString(),
+      updated_at: now.toISOString(),
     });
   } catch (sbSyncErr) {
     console.warn("[Payment Activation] Supabase cloud sync notice:", sbSyncErr);

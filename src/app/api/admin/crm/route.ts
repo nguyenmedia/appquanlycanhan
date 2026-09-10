@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { supabase } from "@/lib/supabase";
+import { syncCoreAdminData } from "@/lib/sync/supabase-sync";
 
 export async function GET(req: NextRequest) {
   try {
     await requireRole(req, ["ADMIN", "SUPER_ADMIN", "SUPPORT"]);
+
+    // Đồng bộ thời gian thực hai chiều với Supabase Cloud
+    await syncCoreAdminData().catch((e) => console.warn("[CRM] Sync warning:", e));
 
     const customers = await prisma.customerCRM.findMany({
       include: {
@@ -65,6 +70,23 @@ export async function PATCH(req: NextRequest) {
         tagsJson: tags ? JSON.stringify(tags) : null,
       },
     });
+
+    // Đẩy ngay lập tức lên Supabase Cloud
+    try {
+      await supabase.from("customer_crm").upsert({
+        id: updated.id,
+        user_id: updated.userId,
+        lifecycle_stage: updated.lifecycleStage,
+        health_score: updated.healthScore,
+        tags_json: updated.tagsJson,
+        last_activity_at: updated.lastActivityAt ? new Date(updated.lastActivityAt).toISOString() : new Date().toISOString(),
+        internal_notes: updated.internalNotes,
+        assigned_to: updated.assignedTo,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (sbErr) {
+      console.warn("[CRM PATCH] Supabase cloud push notice:", sbErr);
+    }
 
     return NextResponse.json({ success: true, crm: updated });
   } catch (error: any) {

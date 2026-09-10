@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { processSuccessfulPayment } from "@/lib/payments";
+import { supabase } from "@/lib/supabase";
+import { syncCoreAdminData } from "@/lib/sync/supabase-sync";
 
 export async function GET(req: NextRequest) {
   try {
     await requireRole(req, ["ADMIN", "SUPER_ADMIN", "SUPPORT"]);
+
+    // Đồng bộ thời gian thực hai chiều với Supabase Cloud
+    await syncCoreAdminData().catch((e) => console.warn("[Payment Requests] Sync warning:", e));
 
     const pendingTxns = await prisma.paymentTransaction.findMany({
       where: {
@@ -119,6 +124,19 @@ export async function POST(req: NextRequest) {
           errorMessage: note || "Admin từ chối giao dịch do chưa nhận được tiền hoặc sai số tiền",
         },
       });
+
+      try {
+        await supabase
+          .from("payment_transactions")
+          .update({
+            status: "failed",
+            error_message: note || "Admin từ chối giao dịch",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", tx.id);
+      } catch (sbErr) {
+        console.warn("[Payment Requests] Supabase reject sync notice:", sbErr);
+      }
 
       await prisma.adminAuditLog.create({
         data: {

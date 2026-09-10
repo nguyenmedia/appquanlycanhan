@@ -273,11 +273,13 @@ export async function POST(req: NextRequest) {
       }
 
       if (planSlug) {
+        const subEndDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
         await supabase.from("subscriptions").upsert({
           user_id: newUser.id,
           plan_id: `plan_${planSlug}`,
           status: "active",
           billing_cycle: "monthly",
+          current_period_end: subEndDate,
         });
       }
     } catch (sbPushErr) {
@@ -397,12 +399,15 @@ export async function PATCH(req: NextRequest) {
 
         // Sync subscription to Supabase
         try {
+          const cloudPlanId = `plan_${plan.slug}`;
+          const subEndDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
           await supabase.from("subscriptions").upsert({
             user_id: userId,
-            plan_id: plan.id,
+            plan_id: cloudPlanId,
             status: "active",
             billing_cycle: "monthly",
             price: plan.priceMonthly,
+            current_period_end: subEndDate,
           });
         } catch (sbSubErr) {
           console.warn("[Admin Users] Supabase subscription sync error:", sbSubErr);

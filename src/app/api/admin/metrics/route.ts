@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { syncCoreAdminData } from "@/lib/sync/supabase-sync";
 
 export async function GET(req: NextRequest) {
   try {
     await requireRole(req, ["ADMIN", "SUPER_ADMIN"]);
+
+    // Đồng bộ thời gian thực hai chiều với Supabase Cloud trước khi tính toán số liệu
+    await syncCoreAdminData().catch((e) => console.warn("[Metrics] Sync warning:", e));
 
     const [
       totalUsers,

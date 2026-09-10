@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const idempotencyKey = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     // Create pending PaymentTransaction record
-    await prisma.paymentTransaction.create({
+    const createdTx = await prisma.paymentTransaction.create({
       data: {
         userId: user.id,
         provider,
@@ -63,6 +63,26 @@ export async function POST(req: NextRequest) {
         }),
       },
     });
+
+    // Real-time Cloud Sync to Supabase
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      await supabase.from("payment_transactions").upsert({
+        id: createdTx.id,
+        user_id: user.id,
+        provider,
+        idempotency_key: idempotencyKey,
+        amount: finalAmount,
+        currency: "VND",
+        status: "pending",
+        payment_method: provider.toUpperCase(),
+        metadata_json: createdTx.metadataJson,
+        created_at: createdTx.createdAt.toISOString(),
+        updated_at: createdTx.updatedAt.toISOString(),
+      });
+    } catch (sbErr) {
+      console.warn("[Checkout] Supabase pending tx push notice:", sbErr);
+    }
 
     // Send real-time Telegram notification
     notifyNewPaymentOrder({

@@ -30,6 +30,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Real-time Cloud Sync to Supabase
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      await supabase
+        .from("payment_transactions")
+        .update({
+          status: "processing",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", tx.id);
+    } catch (sbErr) {
+      console.warn("[Notify Admin] Supabase processing status push notice:", sbErr);
+    }
+
     let planName = "LifeOS Pro";
     let customerName = tx.user?.profile?.fullName || "";
     if (tx.metadataJson) {
