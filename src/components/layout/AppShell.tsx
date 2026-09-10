@@ -75,11 +75,24 @@ export default function AppShell({ children }: AppShellProps) {
     fetchUser();
   }, [pathname, router]);
 
+  useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail) {
+        setUser((prev: any) => ({
+          ...prev,
+          profile: e.detail.profile || e.detail,
+          email: e.detail.email || prev?.email,
+        }));
+      }
+    };
+    window.addEventListener("lifeos-profile-updated", handleProfileUpdate);
+    return () => window.removeEventListener("lifeos-profile-updated", handleProfileUpdate);
+  }, []);
+
   // Real-time multi-device synchronization via Supabase Realtime
   useRealtimeSync(user?.id, (entity) => {
     console.log("[Supabase Multi-Device Sync] Synced update:", entity);
   });
-
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });

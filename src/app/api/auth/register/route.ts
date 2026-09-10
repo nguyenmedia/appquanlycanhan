@@ -27,7 +27,14 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password);
-    const userRefCode = generateReferralCode(fullName || email.split("@")[0]);
+    let userRefCode = generateReferralCode(fullName || email.split("@")[0]);
+    // Ensure referral code is strictly unique
+    const existingRef = await prisma.user.findUnique({
+      where: { referralCode: userRefCode },
+    });
+    if (existingRef) {
+      userRefCode = `${userRefCode}${Math.floor(100 + Math.random() * 900)}`;
+    }
 
     // Create user with profile, initial CRM, and Free plan default
     const user = await prisma.user.create({
@@ -38,7 +45,7 @@ export async function POST(req: NextRequest) {
         referralCode: userRefCode,
         profile: {
           create: {
-            fullName: fullName || "Người dùng LifeOS",
+            fullName: fullName?.trim() || "Người dùng LifeOS",
             onboardingCompleted: false,
           },
         },
@@ -52,6 +59,25 @@ export async function POST(req: NextRequest) {
       },
       include: { profile: true },
     });
+
+    // Create default Free Subscription record
+    const freePlan = await prisma.plan.findUnique({ where: { slug: "free" } });
+    if (freePlan) {
+      const now = new Date();
+      await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          planId: freePlan.id,
+          status: "active",
+          billingCycle: "monthly",
+          price: 0,
+          startDate: now,
+          currentPeriodStart: now,
+          currentPeriodEnd: new Date(now.getTime() + 100 * 365 * 24 * 60 * 60 * 1000), // Lifetime free
+          provider: "internal",
+        },
+      });
+    }
 
     // Grant initial AI credits (20 for Free plan)
     await prisma.aICreditLedger.create({

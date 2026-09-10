@@ -59,9 +59,9 @@ export default function OnboardingPage() {
           primaryTarget,
         }),
       });
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (e) {
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     }
   };
 

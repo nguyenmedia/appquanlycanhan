@@ -39,7 +39,7 @@ function RegisterForm() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        router.push("/onboarding");
+        window.location.href = "/onboarding";
       } else {
         setError(data.error || "Lỗi đăng ký tài khoản");
       }

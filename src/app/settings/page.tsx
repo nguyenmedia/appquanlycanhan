@@ -167,6 +167,11 @@ function SettingsContent() {
       }
 
       setUserData(data.user);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("lifeos-profile-updated", { detail: data.user })
+        );
+      }
       setMessage({ type: "success", text: "Đã lưu cập nhật hồ sơ thành công!" });
       setTimeout(() => setMessage(null), 4000);
     } catch (err: any) {
