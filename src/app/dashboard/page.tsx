@@ -152,152 +152,180 @@ export default function DashboardPage() {
         featureName={upgradeFeature}
       />
 
-      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="p-3.5 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* WELCOME BANNER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-neutral-800/60">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 capitalize mb-1">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-3 border-b border-white/[0.08]">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-[11px] font-medium text-neutral-300">
               <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{todayDateStr}</span>
+              <span className="capitalize">{todayDateStr}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
               Xin chào, {user?.profile?.fullName || "bạn"}! 👋
             </h1>
-            <p className="text-xs text-neutral-400 mt-1">
-              Hôm nay bạn có <strong>{activeTasks.length} nhiệm vụ</strong> cần làm, <strong>{habits.length - completedHabitsCount} thói quen</strong> chờ điểm danh, và đã tập trung <strong>{totalFocusMins} phút Deep Work</strong>.
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-medium text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                {activeTasks.length} việc cần làm
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-medium text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                {habits.length - completedHabitsCount} thói quen chờ
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-300 font-medium text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                {totalFocusMins}p Deep Work
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* QUICK ACTIONS - RESPONSIVE 3-COL GRID ON MOBILE */}
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 pt-1">
             <Link
               href="/tasks"
-              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition active:scale-95"
+              className="h-10 sm:h-9 px-2.5 sm:px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/25 transition active:scale-95"
             >
-              <Plus className="w-4 h-4" />
-              <span>Thêm việc mới</span>
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Thêm việc</span>
             </Link>
             <Link
               href="/pomodoro"
-              className="px-3.5 py-2 rounded-xl bg-orange-600/20 border border-orange-500/30 hover:bg-orange-600/30 text-orange-300 font-semibold text-xs flex items-center gap-1.5 transition"
+              className="h-10 sm:h-9 px-2.5 sm:px-3.5 rounded-xl bg-orange-500/15 border border-orange-500/30 hover:bg-orange-500/25 text-orange-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
             >
-              <Timer className="w-4 h-4" />
-              <span>Pomodoro</span>
+              <Timer className="w-4 h-4 text-orange-400 flex-shrink-0" />
+              <span className="truncate">Pomodoro</span>
             </Link>
             <Link
               href="/finance"
-              className="px-3.5 py-2 rounded-xl border border-neutral-800 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 font-semibold text-xs flex items-center gap-1.5 transition"
+              className="h-10 sm:h-9 px-2.5 sm:px-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
             >
-              <Wallet className="w-4 h-4 text-emerald-400" />
-              <span>Ghi chi tiêu</span>
+              <Wallet className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="truncate">Chi tiêu</span>
             </Link>
           </div>
         </div>
 
         {/* METRICS SUMMARY ROW */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Tasks Card */}
           <Link
             href="/tasks"
-            className="p-4 rounded-2xl bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 transition flex flex-col justify-between"
+            className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/[0.08] hover:border-white/[0.16] shadow-lg shadow-black/25 transition flex flex-col justify-between active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between text-neutral-400 text-xs mb-2">
-              <span className="flex items-center gap-1.5 font-medium text-neutral-300">
-                <CheckSquare className="w-4 h-4 text-indigo-400" />
-                Công việc
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="flex items-center gap-1.5 font-semibold text-neutral-200">
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <CheckSquare className="w-3.5 h-3.5" />
+                </div>
+                <span>Công việc</span>
               </span>
-              <span className="text-[11px] font-semibold text-emerald-400">
-                {completedTasks.length}/{tasks.length} xong
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                {completedTasks.length}/{tasks.length}
               </span>
             </div>
-            <div className="text-2xl font-bold text-white mb-1">{activeTasks.length} việc cần làm</div>
-            <div className="w-full bg-neutral-800 h-1 rounded-full overflow-hidden">
-              <div
-                className="bg-indigo-500 h-full rounded-full transition-all"
-                style={{
-                  width: `${tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0}%`,
-                }}
-              />
+            <div>
+              <div className="text-xl sm:text-2xl font-black text-white tracking-tight mb-1">
+                {activeTasks.length} <span className="text-xs font-medium text-neutral-400">việc</span>
+              </div>
+              <div className="w-full bg-white/[0.06] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-indigo-500 h-full rounded-full transition-all"
+                  style={{
+                    width: `${tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0}%`,
+                  }}
+                />
+              </div>
             </div>
           </Link>
 
           {/* Habits Card */}
           <Link
             href="/habits"
-            className="p-4 rounded-2xl bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 transition flex flex-col justify-between"
+            className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/[0.08] hover:border-white/[0.16] shadow-lg shadow-black/25 transition flex flex-col justify-between active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between text-neutral-400 text-xs mb-2">
-              <span className="flex items-center gap-1.5 font-medium text-neutral-300">
-                <Zap className="w-4 h-4 text-emerald-400" />
-                Thói quen
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="flex items-center gap-1.5 font-semibold text-neutral-200">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Zap className="w-3.5 h-3.5" />
+                </div>
+                <span>Thói quen</span>
               </span>
-              <span className="text-[11px] font-semibold text-emerald-400">
-                {completedHabitsCount}/{habits.length} đạt
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                {completedHabitsCount}/{habits.length}
               </span>
             </div>
-            <div className="text-2xl font-bold text-white mb-1">
-              {habits[0]?.streak ? `${habits[0].streak} ngày` : "Khởi động"}
+            <div>
+              <div className="text-xl sm:text-2xl font-black text-white tracking-tight mb-0.5">
+                {habits[0]?.streak ? `${habits[0].streak} ngày` : "Khởi động"}
+              </div>
+              <div className="text-[10px] text-neutral-400 truncate">Streak cao nhất</div>
             </div>
-            <div className="text-[11px] text-neutral-500">Chuỗi streak thói quen cao nhất</div>
           </Link>
 
           {/* Finance Balance Card */}
           <Link
             href="/finance"
-            className="p-4 rounded-2xl bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 transition flex flex-col justify-between"
+            className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/[0.08] hover:border-white/[0.16] shadow-lg shadow-black/25 transition flex flex-col justify-between active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between text-neutral-400 text-xs mb-2">
-              <span className="flex items-center gap-1.5 font-medium text-neutral-300">
-                <Wallet className="w-4 h-4 text-amber-400" />
-                Tài chính
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="flex items-center gap-1.5 font-semibold text-neutral-200">
+                <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Wallet className="w-3.5 h-3.5" />
+                </div>
+                <span>Tài chính</span>
               </span>
-              <span className="text-[11px] font-semibold text-emerald-400 flex items-center">
-                <TrendingUp className="w-3 h-3 mr-0.5" />
+              <span className="text-[10px] font-bold text-emerald-400 flex items-center bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                <TrendingUp className="w-2.5 h-2.5 mr-0.5" />
                 VND
               </span>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-white mb-1 truncate">
-              {financeSummary?.totalBalance !== undefined
-                ? `${financeSummary.totalBalance.toLocaleString("vi-VN")}đ`
-                : "0đ"}
-            </div>
-            <div className="text-[11px] text-neutral-500">
-              Chi tháng: {financeSummary?.totalExpense?.toLocaleString("vi-VN") || 0}đ
+            <div>
+              <div className="text-lg sm:text-2xl font-black text-white tracking-tight mb-0.5 truncate">
+                {financeSummary?.totalBalance !== undefined
+                  ? `${financeSummary.totalBalance.toLocaleString("vi-VN")}đ`
+                  : "0đ"}
+              </div>
+              <div className="text-[10px] text-neutral-400 truncate">
+                Chi: {financeSummary?.totalExpense?.toLocaleString("vi-VN") || 0}đ
+              </div>
             </div>
           </Link>
 
           {/* Pomodoro Focus Card */}
           <Link
             href="/pomodoro"
-            className="p-4 rounded-2xl bg-neutral-900/70 border border-neutral-800 hover:border-neutral-700 transition flex flex-col justify-between"
+            className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/[0.08] hover:border-white/[0.16] shadow-lg shadow-black/25 transition flex flex-col justify-between active:scale-[0.98]"
           >
-            <div className="flex items-center justify-between text-neutral-400 text-xs mb-2">
-              <span className="flex items-center gap-1.5 font-medium text-neutral-300">
-                <Timer className="w-4 h-4 text-orange-400" />
-                Pomodoro Focus
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="flex items-center gap-1.5 font-semibold text-neutral-200">
+                <div className="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                  <Timer className="w-3.5 h-3.5" />
+                </div>
+                <span>Pomodoro</span>
               </span>
-              <span className="text-[11px] font-semibold text-orange-400">
+              <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-md border border-orange-500/20">
                 {pomodoroStats?.sessions?.length || 0} phiên
               </span>
             </div>
-            <div className="text-2xl font-bold text-orange-400 mb-1">
-              {totalFocusMins} phút
-            </div>
-            <div className="text-[11px] text-neutral-500 truncate">
-              Tập trung làm việc sâu
+            <div>
+              <div className="text-xl sm:text-2xl font-black text-orange-400 tracking-tight mb-0.5">
+                {totalFocusMins} <span className="text-xs font-medium text-orange-300/80">phút</span>
+              </div>
+              <div className="text-[10px] text-neutral-400 truncate">Làm việc sâu</div>
             </div>
           </Link>
         </div>
 
         {/* AI FOCUS ADVISOR WIDGET */}
-        <div className="rounded-3xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/30 via-purple-950/20 to-neutral-900 p-5 sm:p-6 shadow-xl relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+        <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/50 via-purple-950/30 to-[#0e0e16] p-4 sm:p-6 shadow-xl shadow-indigo-950/20 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 mb-3 sm:mb-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex-shrink-0 shadow-md">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">Trợ lý AI Lập Kế Hoạch Ngày</h3>
-                <p className="text-xs text-neutral-400">
+                <h3 className="font-bold text-sm sm:text-base text-white">Trợ lý AI Lập Kế Hoạch Ngày</h3>
+                <p className="text-[11px] sm:text-xs text-neutral-400">
                   Tự động phân tích lịch biểu, thói quen và đề xuất lịch làm việc tối ưu nhất
                 </p>
               </div>
@@ -305,7 +333,7 @@ export default function DashboardPage() {
             <button
               onClick={handleGenerateAiDailyPlan}
               disabled={aiLoading}
-              className="px-4 py-2.5 rounded-xl bg-gradient-brand text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 hover:opacity-95 transition disabled:opacity-50"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-brand text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:opacity-95 transition active:scale-95 disabled:opacity-50"
             >
               {aiLoading ? (
                 <>
@@ -322,14 +350,14 @@ export default function DashboardPage() {
           </div>
 
           {aiAdvice ? (
-            <div className="mt-4 p-4 rounded-2xl bg-neutral-950/70 border border-neutral-800 text-xs text-neutral-200 leading-relaxed whitespace-pre-line animate-in fade-in">
+            <div className="mt-3 p-3.5 sm:p-4 rounded-xl bg-black/40 border border-white/[0.08] text-xs text-neutral-200 leading-relaxed whitespace-pre-line animate-in fade-in">
               {aiAdvice}
             </div>
           ) : (
-            <div className="p-3.5 rounded-2xl bg-neutral-950/40 border border-neutral-800/80 text-xs text-neutral-400 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+            <div className="p-3 rounded-xl bg-black/30 border border-white/[0.06] text-[11px] sm:text-xs text-neutral-400 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
               <span>
-                Nhấn nút "Tạo kế hoạch ngày bằng AI" để trợ lý LifeOS phân bổ khung giờ Deep Work và nhắc nhở thói quen.
+                Nhấn nút trên để trợ lý LifeOS tự động lên lịch Deep Work và nhắc nhở thói quen hôm nay.
               </span>
             </div>
           )}

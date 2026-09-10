@@ -15,10 +15,10 @@ export default function FloatingSupportWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-[76px] right-3.5 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end">
       {/* Quick Preview Popup */}
       {isOpen && (
-        <div className="mb-3 w-80 rounded-2xl bg-[#0e0e16]/95 border border-indigo-500/30 p-4 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="mb-3 w-[calc(100vw-28px)] max-w-sm sm:w-80 rounded-2xl bg-[#0e0e16]/95 border border-indigo-500/30 p-4 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
@@ -76,15 +76,15 @@ export default function FloatingSupportWidget() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Hỗ trợ khách hàng"
-          className="relative w-13 h-13 p-3 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-600/35 hover:scale-105 active:scale-95 transition duration-200 flex items-center justify-center group border border-indigo-400/40"
+          className="relative w-11 h-11 sm:w-13 sm:h-13 p-2.5 sm:p-3 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-600/35 hover:scale-105 active:scale-95 transition duration-200 flex items-center justify-center group border border-indigo-400/40"
         >
           {isOpen ? (
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           ) : (
             <>
-              <Headphones className="w-6 h-6 group-hover:rotate-6 transition-transform" />
+              <Headphones className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-6 transition-transform" />
               {/* Green online indicator */}
-              <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#09090b] rounded-full animate-pulse" />
+              <span className="absolute top-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-500 border-2 border-[#09090b] rounded-full animate-pulse" />
             </>
           )}
         </button>

@@ -248,37 +248,71 @@ export default function AppShell({ children }: AppShellProps) {
       </aside>
 
       {/* MOBILE TOP BAR */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-[#0d0d12] sticky top-0 z-30">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-brand flex items-center justify-center font-bold text-white text-xs">
+      <header className="md:hidden flex items-center justify-between px-4 py-2.5 border-b border-white/[0.08] bg-[#0c0c14]/90 backdrop-blur-xl sticky top-0 z-40">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-brand flex items-center justify-center font-bold text-white text-xs shadow-md shadow-indigo-500/25 ring-1 ring-white/20">
             L
           </div>
-          <span className="font-bold text-base bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
-            LifeOS
-          </span>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm leading-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
+              LifeOS
+            </span>
+            <span className="text-[10px] text-neutral-400 leading-none">
+              Quản lý toàn diện
+            </span>
+          </div>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => {
               window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }));
             }}
-            className="p-2 text-neutral-400 rounded-lg hover:bg-neutral-800"
+            className="p-2 text-neutral-400 rounded-xl hover:text-white hover:bg-white/[0.06] active:scale-95 transition"
+            aria-label="Tìm kiếm"
           >
             <Search className="w-4 h-4" />
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-neutral-400 rounded-lg hover:bg-neutral-800"
+            className={`p-2 rounded-xl transition active:scale-95 ${
+              mobileMenuOpen
+                ? "bg-white/10 text-white"
+                : "text-neutral-400 hover:text-white hover:bg-white/[0.06]"
+            }`}
+            aria-label="Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </header>
 
-      {/* MOBILE FULLSCREEN MENU */}
+      {/* MOBILE FULLSCREEN DRAWER MENU */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[53px] z-40 bg-neutral-950 p-4 overflow-y-auto pb-24">
+        <div className="md:hidden fixed inset-0 top-[53px] z-40 bg-[#09090e]/95 backdrop-blur-2xl p-4 overflow-y-auto pb-32 animate-in fade-in duration-150">
+          {/* User Profile Card */}
+          {user && (
+            <div className="p-3.5 mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-md">
+                  {user.profile?.fullName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="overflow-hidden">
+                  <div className="font-semibold text-sm text-white truncate">
+                    {user.profile?.fullName || "Người dùng LifeOS"}
+                  </div>
+                  <div className="text-xs text-neutral-400 truncate">{user.email}</div>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                {user.subscriptions?.[0]?.plan?.slug?.toUpperCase() || "PRO"}
+              </span>
+            </div>
+          )}
+
           <div className="space-y-1 mb-6">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 px-3 py-1">
+              Phân hệ tính năng
+            </div>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -287,52 +321,65 @@ export default function AppShell({ children }: AppShellProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium ${
-                    isActive ? "bg-indigo-600 text-white" : "text-neutral-300 hover:bg-neutral-900"
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
+                    isActive
+                      ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/20"
+                      : "text-neutral-300 hover:bg-white/[0.05]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5" />
+                    <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-indigo-400"}`} />
                     <span>{item.label}</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-600" />
+                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-neutral-600"}`} />
                 </Link>
               );
             })}
           </div>
 
-          <div className="pt-4 border-t border-neutral-800 space-y-2">
+          <div className="pt-4 border-t border-white/[0.08] space-y-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 px-3 py-1">
+              Hệ thống & Tài khoản
+            </div>
             <Link
               href="/settings/billing"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-900"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-neutral-300 hover:bg-white/[0.05] transition"
             >
-              <CreditCard className="w-5 h-5 text-indigo-400" />
+              <CreditCard className="w-4 h-4 text-indigo-400" />
               <span>Gói cước & Đăng ký</span>
+            </Link>
+            <Link
+              href="/support"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-neutral-300 hover:bg-white/[0.05] transition"
+            >
+              <LifeBuoy className="w-4 h-4 text-sky-400" />
+              <span>Hỗ trợ kỹ thuật 1:1</span>
             </Link>
             <Link
               href="/refer"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-900"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-neutral-300 hover:bg-white/[0.05] transition"
             >
-              <UserCheck className="w-5 h-5 text-emerald-400" />
+              <UserCheck className="w-4 h-4 text-emerald-400" />
               <span>Giới thiệu bạn bè (+7 ngày Pro)</span>
             </Link>
             {isSuperAdminOrAdmin && (
               <Link
                 href="/admin"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-amber-400 hover:bg-amber-950/40"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-amber-400 hover:bg-amber-950/40 transition"
               >
-                <ShieldCheck className="w-5 h-5" />
+                <ShieldCheck className="w-4 h-4" />
                 <span>Quản trị SaaS</span>
               </Link>
             )}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-950/20"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-950/20 transition mt-2"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
               <span>Đăng xuất</span>
             </button>
           </div>
@@ -340,54 +387,85 @@ export default function AppShell({ children }: AppShellProps) {
       )}
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-6">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-24 md:pb-6 touch-pan-y">{children}</main>
 
       {/* MOBILE BOTTOM NAVIGATION BAR */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-neutral-800 bg-[#0d0d12]/95 backdrop-blur-lg flex items-center justify-around py-2 px-3">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.08] bg-[#0c0c14]/90 backdrop-blur-2xl px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom,0px),10px)] flex items-center justify-around shadow-[0_-8px_25px_rgba(0,0,0,0.45)]">
         <Link
           href="/dashboard"
-          className={`flex flex-col items-center gap-1 text-[11px] ${
-            pathname === "/dashboard" ? "text-indigo-400 font-semibold" : "text-neutral-500"
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
+            pathname === "/dashboard"
+              ? "text-indigo-400 font-semibold"
+              : "text-neutral-400 hover:text-neutral-200"
           }`}
         >
-          <LayoutDashboard className="w-5 h-5" />
-          <span>Tổng quan</span>
-        </Link>
-        <Link
-          href="/tasks"
-          className={`flex flex-col items-center gap-1 text-[11px] ${
-            pathname === "/tasks" ? "text-indigo-400 font-semibold" : "text-neutral-500"
-          }`}
-        >
-          <CheckSquare className="w-5 h-5" />
-          <span>Việc</span>
+          <div className="relative">
+            <LayoutDashboard className="w-5 h-5" />
+            {pathname === "/dashboard" && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" />
+            )}
+          </div>
+          <span className="text-[10px] mt-1 tracking-tight">Tổng quan</span>
         </Link>
 
-        {/* Floating Quick Action */}
+        <Link
+          href="/tasks"
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
+            pathname === "/tasks"
+              ? "text-indigo-400 font-semibold"
+              : "text-neutral-400 hover:text-neutral-200"
+          }`}
+        >
+          <div className="relative">
+            <CheckSquare className="w-5 h-5" />
+            {pathname === "/tasks" && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" />
+            )}
+          </div>
+          <span className="text-[10px] mt-1 tracking-tight">Công việc</span>
+        </Link>
+
+        {/* Floating Quick Action Button */}
         <button
           onClick={() => router.push("/tasks?new=true")}
-          className="w-10 h-10 -mt-5 rounded-full bg-gradient-brand text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 active:scale-95 transition"
+          aria-label="Tạo mới"
+          className="relative -top-2.5 w-11 h-11 rounded-full bg-gradient-brand text-white flex items-center justify-center shadow-lg shadow-indigo-500/35 ring-4 ring-[#0c0c14] active:scale-95 transition-transform"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-5 h-5 stroke-[2.5]" />
         </button>
 
         <Link
           href="/calendar"
-          className={`flex flex-col items-center gap-1 text-[11px] ${
-            pathname === "/calendar" ? "text-indigo-400 font-semibold" : "text-neutral-500"
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
+            pathname === "/calendar"
+              ? "text-indigo-400 font-semibold"
+              : "text-neutral-400 hover:text-neutral-200"
           }`}
         >
-          <Calendar className="w-5 h-5" />
-          <span>Lịch</span>
+          <div className="relative">
+            <Calendar className="w-5 h-5" />
+            {pathname === "/calendar" && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" />
+            )}
+          </div>
+          <span className="text-[10px] mt-1 tracking-tight">Lịch biểu</span>
         </Link>
+
         <Link
           href="/finance"
-          className={`flex flex-col items-center gap-1 text-[11px] ${
-            pathname === "/finance" ? "text-indigo-400 font-semibold" : "text-neutral-500"
+          className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
+            pathname === "/finance"
+              ? "text-indigo-400 font-semibold"
+              : "text-neutral-400 hover:text-neutral-200"
           }`}
         >
-          <Wallet className="w-5 h-5" />
-          <span>Tài chính</span>
+          <div className="relative">
+            <Wallet className="w-5 h-5" />
+            {pathname === "/finance" && (
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" />
+            )}
+          </div>
+          <span className="text-[10px] mt-1 tracking-tight">Tài chính</span>
         </Link>
       </nav>
     </div>
