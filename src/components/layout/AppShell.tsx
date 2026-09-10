@@ -30,6 +30,8 @@ import {
   Plus,
   Coins,
   Globe,
+  User,
+  Settings,
 } from "lucide-react";
 import CommandPalette from "../CommandPalette";
 import { useRealtimeSync } from "@/lib/sync";
@@ -463,24 +465,37 @@ export default function AppShell({ children }: AppShellProps) {
 
         {/* User Card */}
         <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-xs text-white flex-shrink-0">
+          <Link
+            href="/settings/profile"
+            title="Xem & Chỉnh sửa hồ sơ cá nhân"
+            className="flex items-center gap-2.5 overflow-hidden group hover:opacity-90 transition flex-1 min-w-0 pr-1.5"
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-xs text-white flex-shrink-0 ring-1 ring-white/10 group-hover:ring-indigo-400 transition">
               {user?.profile?.fullName?.charAt(0) || "U"}
             </div>
             <div className="overflow-hidden">
-              <span className="block text-xs font-semibold text-white truncate">
+              <span className="block text-xs font-semibold text-white truncate group-hover:text-indigo-300 transition">
                 {user?.profile?.fullName || "Người dùng"}
               </span>
               <span className="block text-[10px] text-neutral-500 truncate">{user?.email}</span>
             </div>
+          </Link>
+          <div className="flex items-center gap-0.5">
+            <Link
+              href="/settings"
+              title="Cài đặt tài khoản"
+              className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition"
+            >
+              <Settings className="w-4 h-4" />
+            </Link>
+            <button
+              onClick={handleLogout}
+              title="Đăng xuất"
+              className="p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            title="Đăng xuất"
-            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800 transition"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </aside>
 
@@ -528,22 +543,29 @@ export default function AppShell({ children }: AppShellProps) {
         <div className="md:hidden fixed inset-0 top-[53px] z-40 bg-[#09090e]/95 backdrop-blur-2xl p-4 overflow-y-auto pb-32 animate-in fade-in duration-150">
           {/* User Profile Card */}
           {user && (
-            <div className="p-3.5 mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between">
+            <Link
+              href="/settings/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-3.5 mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] hover:border-indigo-500/40 flex items-center justify-between transition group"
+            >
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-md ring-1 ring-white/15">
                   {user.profile?.fullName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="overflow-hidden">
-                  <div className="font-semibold text-sm text-white truncate">
+                  <div className="font-semibold text-sm text-white truncate group-hover:text-indigo-300 transition">
                     {user.profile?.fullName || "Người dùng LifeOS"}
                   </div>
                   <div className="text-xs text-neutral-400 truncate">{user.email}</div>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                {user.subscriptions?.[0]?.plan?.slug?.toUpperCase() || "PRO"}
-              </span>
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {user.subscriptions?.[0]?.plan?.slug?.toUpperCase() || "PRO"}
+                </span>
+                <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-white transition" />
+              </div>
+            </Link>
           )}
 
           <div className="space-y-4 mb-6">
@@ -623,6 +645,22 @@ export default function AppShell({ children }: AppShellProps) {
             <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 px-3 py-1">
               Hệ thống & Tài khoản
             </div>
+            <Link
+              href="/settings/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-neutral-300 hover:bg-white/[0.05] transition"
+            >
+              <User className="w-4 h-4 text-indigo-400" />
+              <span>Thông tin cá nhân & Hồ sơ</span>
+            </Link>
+            <Link
+              href="/settings"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-neutral-300 hover:bg-white/[0.05] transition"
+            >
+              <Settings className="w-4 h-4 text-slate-400" />
+              <span>Cài đặt & Bảo mật</span>
+            </Link>
             <Link
               href="/settings/billing"
               onClick={() => setMobileMenuOpen(false)}
