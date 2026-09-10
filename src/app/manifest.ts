@@ -1,0 +1,72 @@
+import { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "LifeOS – Hệ Điều Hành Quản Lý Cuộc Sống Toàn Diện",
+    short_name: "LifeOS",
+    description:
+      "Nền tảng quản lý công việc, tài chính cá nhân, theo dõi thói quen, mục tiêu OKR và trợ lý AI thông minh.",
+    start_url: "/dashboard",
+    display: "standalone",
+    background_color: "#09090e",
+    theme_color: "#09090e",
+    orientation: "portrait-primary",
+    categories: ["productivity", "finance", "lifestyle", "utilities"],
+    icons: [
+      {
+        src: "/icons/icon-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-maskable-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/icons/icon-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-maskable-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Tạo công việc mới",
+        short_name: "Tạo việc",
+        description: "Mở nhanh form tạo nhiệm vụ mới",
+        url: "/tasks?new=true",
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Ghi chép tài chính",
+        short_name: "Tài chính",
+        description: "Ghi chép thu chi và xem số dư ví",
+        url: "/finance?tab=transactions",
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Trợ lý AI",
+        short_name: "AI Assistant",
+        description: "Chat và lập kế hoạch cùng Trợ lý AI",
+        url: "/ai",
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Check thói quen",
+        short_name: "Thói quen",
+        description: "Điểm danh chuỗi thói quen hôm nay",
+        url: "/habits",
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+      },
+    ],
+  };
+}

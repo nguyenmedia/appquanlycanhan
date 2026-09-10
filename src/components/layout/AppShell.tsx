@@ -32,6 +32,7 @@ import {
   Globe,
   User,
   Settings,
+  Smartphone,
 } from "lucide-react";
 import CommandPalette from "../CommandPalette";
 import { useRealtimeSync } from "@/lib/sync";
@@ -658,6 +659,23 @@ export default function AppShell({ children }: AppShellProps) {
             <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 px-3 py-1">
               Hệ thống & Tài khoản
             </div>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("lifeos-trigger-pwa-install"));
+                }
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 transition text-left active:scale-98"
+            >
+              <div className="flex items-center gap-3">
+                <Smartphone className="w-4 h-4 text-amber-400" />
+                <span>Cài đặt ứng dụng Android</span>
+              </div>
+              <span className="text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-md font-bold uppercase">
+                App
+              </span>
+            </button>
             <Link
               href="/settings/profile"
               onClick={() => setMobileMenuOpen(false)}

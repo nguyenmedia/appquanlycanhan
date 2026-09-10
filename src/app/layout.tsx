@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import FloatingSupportWidget from "@/components/FloatingSupportWidget";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lifeos.vn";
 
@@ -152,6 +153,13 @@ export default function RootLayout({
   return (
     <html lang="vi" className="dark scroll-smooth">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="LifeOS" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -159,6 +167,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#09090b] text-neutral-100 antialiased selection:bg-indigo-500 selection:text-white">
         {children}
+        <PWAInstallPrompt />
         <FloatingSupportWidget />
       </body>
     </html>

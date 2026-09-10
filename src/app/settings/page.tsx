@@ -914,6 +914,31 @@ function SettingsContent() {
                   />
                 </button>
               </div>
+
+              {/* PWA Mobile App Install */}
+              <div className="pt-4 flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-emerald-400" />
+                    <span>Cài đặt ứng dụng lên điện thoại Android (PWA)</span>
+                  </div>
+                  <div className="text-xs text-neutral-400">
+                    Cài đặt ứng dụng độc lập vào màn hình chính để mở toàn màn hình và hoạt động mượt mà
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(new CustomEvent("lifeos-trigger-pwa-install"));
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 active:scale-95 flex-shrink-0"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Cài đặt App</span>
+                </button>
+              </div>
             </div>
 
             <div className="pt-4 flex justify-end">
