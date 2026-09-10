@@ -14,8 +14,9 @@ import {
   Trash2,
   Eye,
   CheckCircle2,
-  Filter,
   UserCheck,
+  Cloud,
+  RefreshCw,
 } from "lucide-react";
 
 export default function AdminUsersPage() {
@@ -24,6 +25,9 @@ export default function AdminUsersPage() {
   const [planFilter, setPlanFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [supabaseConnected, setSupabaseConnected] = useState(true);
+  const [cloudCount, setCloudCount] = useState(0);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -45,7 +49,8 @@ export default function AdminUsersPage() {
   const [bonusNote, setBonusNote] = useState("");
   const [bonusLoading, setBonusLoading] = useState(false);
 
-  const loadUsers = async () => {
+  const loadUsers = async (isManualSync = false) => {
+    if (isManualSync) setSyncing(true);
     try {
       const params = new URLSearchParams();
       if (search) params.append("q", search);
@@ -54,11 +59,16 @@ export default function AdminUsersPage() {
 
       const res = await fetch(`/api/admin/users?${params.toString()}`);
       const json = await res.json();
-      if (json.success) setUsers(json.users);
+      if (json.success) {
+        setUsers(json.users);
+        if (json.supabaseConnected !== undefined) setSupabaseConnected(json.supabaseConnected);
+        if (json.cloudUserCount !== undefined) setCloudCount(json.cloudUserCount);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+      if (isManualSync) setSyncing(false);
     }
   };
 
@@ -179,9 +189,17 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string, email: string) => {
-    if (!confirm(`BẠN CÓ CHẮC CHẮN MUỐN XÓA TÀI KHOẢN ${email}?\nThao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu của người dùng!`)) return;
+    if (
+      !confirm(
+        `BẠN CÓ CHẮC CHẮN MUỐN XÓA VĨNH VIỄN TÀI KHOẢN ${email}?\n\nThao tác này sẽ xóa triệt để trên Supabase Cloud và cơ sở dữ liệu hệ thống. Tài khoản sẽ KHÔNG BAO GIỜ tự động phục hồi lại!`
+      )
+    )
+      return;
 
     try {
+      // Optimistic update
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+
       const res = await fetch(`/api/admin/users?userId=${userId}`, {
         method: "DELETE",
       });
@@ -190,9 +208,11 @@ export default function AdminUsersPage() {
         loadUsers();
       } else {
         alert(json.error || "Lỗi xóa người dùng");
+        loadUsers();
       }
     } catch (e) {
       alert("Lỗi kết nối");
+      loadUsers();
     }
   };
 
@@ -206,17 +226,39 @@ export default function AdminUsersPage() {
             <span>Quản Lý Người Dùng & Tài Khoản</span>
           </h1>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Tìm kiếm, xem thống kê chi tiết, cấp AI credit, đổi gói cước và quản lý quyền hạn
+            Dữ liệu tài khoản đăng ký thật đồng bộ trực tiếp hai chiều từ Supabase Cloud
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-950/60 border border-emerald-800/80 text-emerald-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <Cloud className="w-3 h-3" />
+              <span>Supabase Cloud: {supabaseConnected ? "Đã kết nối trực tiếp" : "Mất kết nối"}</span>
+            </span>
+            <span className="text-[11px] text-neutral-500">
+              • {users.length} tài khoản trong hệ thống
+            </span>
+          </div>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition shadow-lg shadow-amber-500/20"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Thêm người dùng mới</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => loadUsers(true)}
+            disabled={syncing}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs font-semibold hover:bg-neutral-700 hover:text-white transition disabled:opacity-50"
+            title="Quét và đồng bộ tài khoản thật từ Supabase Cloud"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${syncing ? "animate-spin" : ""}`} />
+            <span>{syncing ? "Đang đồng bộ..." : "Đồng bộ Supabase"}</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 text-black text-xs font-bold hover:bg-amber-400 transition shadow-lg shadow-amber-500/20"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Thêm người dùng mới</span>
+          </button>
+        </div>
       </div>
 
       {/* FILTER BAR */}
@@ -295,6 +337,10 @@ export default function AdminUsersPage() {
                             "bg-neutral-800 text-neutral-400"
                           }`}>
                             {u.role}
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-medium bg-cyan-950/60 text-cyan-400 border border-cyan-800/40">
+                            <Cloud className="w-2.5 h-2.5" />
+                            <span>Cloud</span>
                           </span>
                           <span className="text-[10px] text-neutral-500 font-mono">Ref: {u.referralCode}</span>
                         </div>

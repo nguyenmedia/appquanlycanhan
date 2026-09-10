@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
             }
 
             user = await prisma.user.findUnique({
-              where: { email: normalizedEmail },
+              where: { email: sbUser.email },
               include: { profile: true },
             });
           } catch (cacheErr) {
