@@ -1,16 +1,29 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Download, X, Smartphone, Sparkles, CheckCircle2 } from "lucide-react";
+import { Download, X, Smartphone, Sparkles, CheckCircle2, Laptop, Share } from "lucide-react";
 
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [installedSuccessfully, setInstalledSuccessfully] = useState(false);
+  const [platform, setPlatform] = useState<"android" | "ios" | "desktop">("desktop");
 
   useEffect(() => {
-    // 1. Register Service Worker in production or localhost
+    // 1. Detect platform
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      if (/android/.test(ua)) {
+        setPlatform("android");
+      } else if (/iphone|ipad|ipod/.test(ua)) {
+        setPlatform("ios");
+      } else {
+        setPlatform("desktop");
+      }
+    }
+
+    // 2. Register Service Worker in production or localhost
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker
@@ -24,7 +37,7 @@ export default function PWAInstallPrompt() {
       });
     }
 
-    // 2. Check if already installed / standalone
+    // 3. Check if already installed / standalone
     if (typeof window !== "undefined") {
       const isStandaloneMode =
         window.matchMedia("(display-mode: standalone)").matches ||
@@ -34,7 +47,7 @@ export default function PWAInstallPrompt() {
       setIsStandalone(Boolean(isStandaloneMode));
     }
 
-    // 3. Listen to beforeinstallprompt on Android/Chrome
+    // 4. Listen to beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -43,8 +56,8 @@ export default function PWAInstallPrompt() {
       const dismissedTime = localStorage.getItem("lifeos_pwa_dismissed");
       if (dismissedTime) {
         const diffHours = (Date.now() - Number(dismissedTime)) / (1000 * 60 * 60);
-        if (diffHours < 24) {
-          // Do not annoy user within 24 hours unless triggered manually
+        if (diffHours < 48) {
+          // Do not annoy user within 48 hours unless triggered manually
           return;
         }
       }
@@ -52,7 +65,7 @@ export default function PWAInstallPrompt() {
       setShowPrompt(true);
     };
 
-    // 4. Custom trigger event for manual buttons (in settings/menu)
+    // 5. Custom trigger event for manual buttons (in settings/menu)
     const handleManualTrigger = () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -65,9 +78,15 @@ export default function PWAInstallPrompt() {
           setShowPrompt(false);
         });
       } else {
-        alert(
-          "Để cài đặt LifeOS trên Android:\n1. Mở menu trình duyệt Chrome (dấu 3 chấm ở góc trên)\n2. Chọn 'Cài đặt ứng dụng' hoặc 'Thêm vào Màn hình chính'"
-        );
+        if (/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())) {
+          alert(
+            "Để cài đặt LifeOS trên iPhone/iPad:\n1. Bấm nút Chia sẻ (Share) ở thanh dưới Safari\n2. Chọn 'Thêm vào Màn hình chính' (Add to Home Screen)"
+          );
+        } else {
+          alert(
+            "Để cài đặt LifeOS:\n1. Mở menu trình duyệt (dấu 3 chấm ở góc trên)\n2. Chọn 'Cài đặt ứng dụng' hoặc 'Thêm vào Màn hình chính'"
+          );
+        }
       }
     };
 
@@ -111,19 +130,33 @@ export default function PWAInstallPrompt() {
     return null; // Already running as installed PWA app
   }
 
+  const promptTitle =
+    platform === "android"
+      ? "Cài đặt LifeOS cho Android"
+      : platform === "ios"
+      ? "Cài đặt LifeOS cho iOS"
+      : "Cài đặt ứng dụng LifeOS";
+
+  const promptDesc =
+    platform === "android"
+      ? "Mở toàn màn hình không có thanh địa chỉ, mượt mà như app gốc"
+      : platform === "ios"
+      ? "Thêm vào màn hình chính để mở toàn màn hình tiện lợi"
+      : "Trải nghiệm ứng dụng độc lập trên máy tính, mở nhanh từ Taskbar";
+
   return (
     <>
       {/* SUCCESS INSTALL BANNER */}
       {installedSuccessfully && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl bg-emerald-500/90 text-white backdrop-blur-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top-4 duration-200">
           <CheckCircle2 className="w-5 h-5 text-white" />
-          <span>LifeOS đã được cài đặt vào điện thoại Android của bạn!</span>
+          <span>LifeOS đã được cài đặt vào thiết bị của bạn thành công!</span>
         </div>
       )}
 
-      {/* ANDROID BOTTOM INSTALL PROMPT */}
+      {/* PWA INSTALL PROMPT CARD - Positioned neatly ABOVE the bottom-right floating support button */}
       {showPrompt && (
-        <div className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 z-50 p-4 rounded-3xl bg-neutral-900/95 border border-indigo-500/30 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-24 right-3.5 sm:bottom-24 sm:right-6 z-40 w-[calc(100vw-28px)] max-w-sm sm:w-96 p-4 rounded-3xl bg-[#0e0e16]/95 border border-indigo-500/30 backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.7)] animate-in fade-in slide-in-from-bottom-5 duration-300">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-500 p-0.5 shadow-lg shadow-indigo-500/30 flex-shrink-0">
@@ -135,11 +168,11 @@ export default function PWAInstallPrompt() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <span>Cài đặt LifeOS cho Android</span>
+                  <span>{promptTitle}</span>
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 </h4>
                 <p className="text-[11px] text-neutral-400 mt-0.5 leading-tight">
-                  Trải nghiệm mượt mà, mở toàn màn hình không có thanh địa chỉ
+                  {promptDesc}
                 </p>
               </div>
             </div>
