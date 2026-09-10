@@ -120,103 +120,79 @@ export default function LandingPage() {
       </aside>
 
       {/* 2. STICKY GLASS NAVBAR */}
-      <header className="sticky top-0 left-0 right-0 z-40 border-b border-white/[0.08] bg-[#070709]/85 backdrop-blur-xl transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-3">
+      <header className="sticky top-0 left-0 right-0 z-40 border-b border-white/[0.08] bg-[#070709]/80 backdrop-blur-xl transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-brand flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition">
+            <div className="w-8 h-8 rounded-xl bg-gradient-brand flex items-center justify-center font-bold text-white text-sm shadow-md shadow-indigo-500/25 group-hover:scale-105 transition">
               L
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight text-white whitespace-nowrap">
-                  LifeOS
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold uppercase whitespace-nowrap">
-                  v2.0
-                </span>
-              </div>
-              <span className="text-[10px] text-neutral-400 tracking-wider whitespace-nowrap hidden sm:block">
-                Hệ điều hành cá nhân toàn diện
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-lg tracking-tight text-white">
+                LifeOS
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold">
+                v2.0
               </span>
             </div>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium">
+          {/* Desktop Nav Links - Streamlined 5 items */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium text-neutral-300">
             <a
-              href="#showcase"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0"
+              href="#modules"
+              className="px-3 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition"
             >
-              Trải nghiệm mẫu
+              Tính năng
             </a>
             <a
               href="#comparison"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition"
             >
-              Giải pháp LifeOS
-            </a>
-            <a
-              href="#modules"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0"
-            >
-              14 Phân hệ
+              Giải pháp
             </a>
             <a
               href="#ai"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0 flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition flex items-center gap-1.5"
             >
               <span>Trợ lý AI</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
-            </a>
-            <a
-              href="#calculator"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0"
-            >
-              Tiết kiệm chi phí
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
             </a>
             <a
               href="#pricing"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition"
             >
               Bảng giá
             </a>
             <a
               href="#faq"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/[0.06] transition whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition"
             >
               Hỏi đáp
             </a>
-            <Link
-              href="/support"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition whitespace-nowrap shrink-0 flex items-center gap-1.5 font-semibold"
-            >
-              <LifeBuoy className="w-3.5 h-3.5" />
-              <span>Hỗ trợ 24/7</span>
-            </Link>
           </nav>
 
           {/* Nav Actions */}
-          <div className="hidden sm:flex items-center gap-2 xl:gap-3 shrink-0">
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
             <Link
               href="/login"
-              className="text-sm font-semibold text-neutral-300 hover:text-white px-3 py-2 rounded-xl hover:bg-white/[0.05] transition whitespace-nowrap shrink-0"
+              className="text-sm font-semibold text-neutral-300 hover:text-white px-3 py-1.5 rounded-full hover:bg-white/[0.05] transition"
             >
               Đăng nhập
             </Link>
             <Link
               href="/register"
-              className="text-sm font-semibold text-white px-4 py-2 rounded-xl bg-gradient-brand hover:opacity-95 shadow-lg shadow-indigo-500/25 transition active:scale-95 flex items-center gap-2 whitespace-nowrap shrink-0"
+              className="text-xs sm:text-sm font-bold text-white px-4 py-2 rounded-full bg-gradient-brand hover:opacity-95 shadow-lg shadow-indigo-500/25 transition active:scale-95 flex items-center gap-1.5"
             >
               <span>Dùng thử miễn phí</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {/* Mobile Menu Toggle Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-neutral-300 hover:text-white active:scale-95 transition"
+            className="md:hidden p-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-neutral-300 hover:text-white active:scale-95 transition"
             aria-label="Mở menu"
           >
             {mobileMenuOpen ? (
@@ -233,31 +209,49 @@ export default function LandingPage() {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-b border-white/[0.08] bg-[#0c0c14]/95 backdrop-blur-2xl px-5 py-6 space-y-4 animate-in fade-in duration-150">
-            <nav className="flex flex-col space-y-2 text-sm text-neutral-300 font-medium">
-              <a href="#showcase" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl hover:bg-white/[0.05]">
-                Trải nghiệm mẫu trực tiếp
+          <div className="md:hidden border-b border-white/[0.08] bg-[#0c0c14]/95 backdrop-blur-2xl px-5 py-5 space-y-3 animate-in fade-in duration-150">
+            <nav className="flex flex-col space-y-1.5 text-sm text-neutral-300 font-medium">
+              <a
+                href="#modules"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2 rounded-xl hover:bg-white/[0.05] transition"
+              >
+                Tính năng (14 Phân hệ)
               </a>
-              <a href="#comparison" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl hover:bg-white/[0.05]">
-                Giải pháp & Lợi ích
+              <a
+                href="#comparison"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2 rounded-xl hover:bg-white/[0.05] transition"
+              >
+                Giải pháp LifeOS
               </a>
-              <a href="#modules" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl hover:bg-white/[0.05]">
-                14 Phân hệ quản trị
-              </a>
-              <a href="#ai" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl text-pink-300 hover:bg-pink-500/10 flex items-center gap-2">
+              <a
+                href="#ai"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2 rounded-xl text-pink-300 hover:bg-pink-500/10 flex items-center gap-2 transition"
+              >
                 <Sparkles className="w-4 h-4" />
-                <span>Trợ lý Trí tuệ Nhân tạo AI</span>
+                <span>Trợ lý Trí tuệ AI</span>
               </a>
-              <a href="#calculator" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl hover:bg-white/[0.05]">
-                Công cụ tính toán tiết kiệm
-              </a>
-              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl hover:bg-white/[0.05]">
+              <a
+                href="#pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2 rounded-xl hover:bg-white/[0.05] transition"
+              >
                 Bảng giá & Khuyến mãi
               </a>
-              <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl hover:bg-white/[0.05]">
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2 rounded-xl hover:bg-white/[0.05] transition"
+              >
                 Hỏi đáp thường gặp
               </a>
-              <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-xl text-indigo-400 font-semibold flex items-center gap-2">
+              <Link
+                href="/support"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3.5 py-2 rounded-xl text-indigo-400 font-semibold flex items-center gap-2 transition"
+              >
                 <LifeBuoy className="w-4 h-4" />
                 <span>Trung tâm hỗ trợ 24/7</span>
               </Link>
