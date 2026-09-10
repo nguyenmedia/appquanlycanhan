@@ -78,7 +78,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nguyenmedia hoặc name@example.com"
+                placeholder="nguyenmedia@gmail.com"
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               />
             </div>
@@ -96,24 +96,6 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               />
-            </div>
-          </div>
-
-          {/* Quick Demo Accounts Helper */}
-          <div className="pt-2 text-[11px] text-neutral-400 space-y-1 bg-neutral-950/50 p-3 rounded-xl border border-neutral-800/60">
-            <div className="font-semibold text-neutral-300 mb-1">Tài khoản Quản Trị Viên (Admin):</div>
-            <div className="flex justify-between items-center">
-              <span>Admin: <strong className="text-white">nguyenmedia</strong></span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("nguyenmedia");
-                  setPassword("nguyenmedia123@");
-                }}
-                className="text-indigo-400 hover:underline font-medium"
-              >
-                Điền nhanh
-              </button>
             </div>
           </div>
 

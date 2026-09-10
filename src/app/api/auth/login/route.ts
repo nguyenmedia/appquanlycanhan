@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
     const rawInput = (email || "").toLowerCase().trim();
     const candidates = [rawInput];
     if (rawInput === "nguyenmedia") {
-      candidates.push("nguyenmedia@lifeos.app");
+      candidates.push("nguyenmedia@gmail.com", "nguyenmedia@lifeos.app");
     } else if (rawInput.startsWith("nguyenmedia@")) {
-      candidates.push("nguyenmedia");
+      candidates.push("nguyenmedia@gmail.com", "nguyenmedia");
     }
 
     let user: any = null;
