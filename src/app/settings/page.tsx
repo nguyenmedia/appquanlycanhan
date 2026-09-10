@@ -273,6 +273,10 @@ function SettingsContent() {
   const passStrength = getPasswordStrength(newPassword);
   const plan = userData?.plan;
   const isPro = plan?.slug === "pro" || plan?.slug === "premium" || plan?.slug === "lifetime";
+  const aiBalance =
+    typeof userData?.aiCredits === "object"
+      ? (userData?.aiCredits?.balance ?? 20)
+      : (typeof userData?.aiCredits === "number" ? userData.aiCredits : 20);
 
   if (loading) {
     return (
@@ -413,7 +417,7 @@ function SettingsContent() {
                 <span>AI Credits</span>
               </div>
               <div className="text-lg font-bold text-white mt-1">
-                {userData?.aiCredits ?? 300} <span className="text-xs text-neutral-500 font-normal">khả dụng</span>
+                {aiBalance} <span className="text-xs text-neutral-500 font-normal">khả dụng</span>
               </div>
             </div>
 
