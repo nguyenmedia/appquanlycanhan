@@ -26,11 +26,15 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        if (!data.user?.onboardingCompleted) {
-          router.push("/onboarding");
-        } else {
-          router.push("/dashboard");
+        if (data.token) {
+          localStorage.setItem("lifeos_token", data.token);
         }
+        if (data.user) {
+          localStorage.setItem("lifeos_user", JSON.stringify(data.user));
+        }
+
+        const targetUrl = !data.user?.onboardingCompleted ? "/onboarding" : "/dashboard";
+        window.location.href = targetUrl;
       } else {
         setError(data.error || "Email hoặc mật khẩu không chính xác");
       }

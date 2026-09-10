@@ -18,12 +18,16 @@ if (isServerless && (!databaseUrl || databaseUrl.startsWith("file:"))) {
   const tmpDbPath = path.join("/tmp", "dev.db");
 
   try {
-    if (!fs.existsSync(tmpDbPath)) {
+    const shouldCopy = !fs.existsSync(tmpDbPath) || fs.statSync(tmpDbPath).size === 0;
+    if (shouldCopy) {
       const candidatePaths = [
         path.join(process.cwd(), "prisma", "dev.db"),
         path.join(process.cwd(), "dev.db"),
         path.resolve("./prisma/dev.db"),
         path.resolve("./dev.db"),
+        path.join(__dirname, "prisma", "dev.db"),
+        path.join(__dirname, "../../../prisma/dev.db"),
+        path.join(__dirname, "../../../../prisma/dev.db"),
       ];
 
       const sourceDb = candidatePaths.find((p) => {

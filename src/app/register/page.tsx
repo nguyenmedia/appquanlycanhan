@@ -39,6 +39,12 @@ function RegisterForm() {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        if (data.token) {
+          localStorage.setItem("lifeos_token", data.token);
+        }
+        if (data.user) {
+          localStorage.setItem("lifeos_user", JSON.stringify(data.user));
+        }
         window.location.href = "/onboarding";
       } else {
         setError(data.error || "Lỗi đăng ký tài khoản");

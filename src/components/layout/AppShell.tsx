@@ -52,7 +52,13 @@ export default function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const token = typeof window !== "undefined" ? localStorage.getItem("lifeos_token") : null;
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch("/api/auth/me", { headers });
         const data = await res.json();
         if (data.authenticated) {
           setUser(data.user);
@@ -96,8 +102,12 @@ export default function AppShell({ children }: AppShellProps) {
   });
 
   const handleLogout = async () => {
+    try {
+      localStorage.removeItem("lifeos_token");
+      localStorage.removeItem("lifeos_user");
+    } catch {}
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
