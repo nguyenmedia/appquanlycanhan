@@ -38,10 +38,10 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma & sqlite
-*.db
 *.db-journal
-/prisma/dev.db
 /generated/prisma
+!/prisma/dev.db
+
 
 # IDE / agent temporary folders
 .agents
